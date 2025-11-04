@@ -13,9 +13,10 @@
 
 ## 📊 STATUS GERAL DO PROJETO
 - **Início**: 04/11/2024
-- **Status Atual**: PLANEJAMENTO
-- **Fase Atual**: -
-- **Progresso Total**: 0%
+- **Status Atual**: EM DESENVOLVIMENTO
+- **Fase Atual**: FASE 0 - Deploy Inicial
+- **Progresso Total**: 5%
+- **GitHub**: https://github.com/nycolasmancini/pmcell-separacao
 
 ## 🔧 STACK TÉCNICO DEFINIDO
 - **Backend**: Django 4.2 + Django Channels (WebSocket)
@@ -80,16 +81,18 @@ pmcell/
 ### **FASE 0: Deploy Inicial no Railway** (PRIORIDADE MÁXIMA)
 **Objetivo**: Configurar deploy básico funcionando no Railway antes de desenvolver features
 
-**Status**: ⏳ Em andamento
+**Status**: ⏳ Em andamento (90% concluído)
 
 **Tarefas**:
-- [ ] Criar projeto Django mínimo
-- [ ] Configurar para Railway (Procfile, runtime.txt, requirements.txt)
-- [ ] Criar repositório no GitHub
-- [ ] Conectar GitHub ao Railway
-- [ ] Fazer primeiro deploy de teste
+- [x] Criar projeto Django mínimo
+- [x] Configurar para Railway (Procfile, runtime.txt, requirements.txt)
+- [x] Criar repositório no GitHub
+- [ ] Conectar GitHub ao Railway (aguardando ação do usuário)
+- [ ] Fazer primeiro deploy de teste (aguardando ação do usuário)
 - [ ] Verificar que está rodando em produção
 - [ ] Configurar variáveis de ambiente
+
+**GitHub**: https://github.com/nycolasmancini/pmcell-separacao
 
 **Resultado esperado**: Página inicial Django rodando no Railway
 
@@ -423,6 +426,21 @@ pmcell/
 - Fases de desenvolvimento organizadas
 - Prioridade: Deploy no Railway primeiro
 
+### 04/11/2024 - FASE 0 Quase Completa
+- ✅ Projeto Django criado e configurado
+- ✅ Configurações para Railway (Procfile, runtime.txt, requirements.txt)
+- ✅ Página inicial funcionando localmente
+- ✅ Repositório GitHub criado: https://github.com/nycolasmancini/pmcell-separacao
+- ✅ Código enviado para GitHub
+- ⏳ Aguardando: Deploy no Railway pelo usuário
+
+**Estrutura criada**:
+- Sistema de templates com base.html
+- Página home.html com status do sistema
+- Configuração para múltiplos ambientes (dev/prod)
+- WhiteNoise configurado para arquivos estáticos
+- Settings preparado para Railway
+
 ---
 
-**Próxima ação**: Iniciar FASE 0 - Deploy Inicial no Railway
+**Próxima ação**: Usuário fazer deploy no Railway e confirmar funcionamento

@@ -14,8 +14,8 @@
 ## 📊 STATUS GERAL DO PROJETO
 - **Início**: 04/11/2024
 - **Status Atual**: EM DESENVOLVIMENTO
-- **Fase Atual**: FASE 1 - ✅ COMPLETA | Próxima: FASE 2
-- **Progresso Total**: 20%
+- **Fase Atual**: FASE 2 - ✅ COMPLETA | Próxima: FASE 3
+- **Progresso Total**: 30%
 - **GitHub**: https://github.com/nycolasmancini/pmcell-separacao
 - **URL Produção**: https://web-production-312d.up.railway.app
 
@@ -133,25 +133,40 @@ pmcell/
 
 ---
 
-### **FASE 2: Sistema de Login e Permissões** (2 dias)
-**Status**: ⏰ Pendente
+### **FASE 2: Sistema de Login e Permissões** ✅ COMPLETA
+**Status**: ✅ COMPLETA - 04/11/2024
 
 **Tarefas**:
-- [ ] Backend de autenticação customizada (numero_login + PIN)
-- [ ] Hash seguro para PINs
-- [ ] Tela de login responsiva
-- [ ] Sistema de bloqueio após 5 tentativas
-- [ ] Rate limiting
-- [ ] Decorators de permissão (@vendedor_required, @separador_required, etc)
-- [ ] View para admin resetar PINs
-- [ ] Logout e gerenciamento de sessão
-- [ ] Timeout de sessão (8 horas)
-- [ ] Middleware de auditoria para todas ações
+- [x] Backend de autenticação customizada (numero_login + PIN)
+- [x] Hash seguro para PINs
+- [x] Tela de login responsiva
+- [x] Sistema de bloqueio após 5 tentativas (30 minutos)
+- [x] Rate limiting (10 tentativas/15min por numero_login)
+- [x] Decorators de permissão (@vendedor_required, @separador_required, etc)
+- [x] View para admin resetar PINs
+- [x] Logout e gerenciamento de sessão
+- [x] Timeout de sessão (8 horas)
+- [x] Middleware de auditoria para todas ações
 
 **Views criadas**:
-- [ ] LoginView
-- [ ] LogoutView
-- [ ] ResetPinView (admin)
+- [x] LoginView (com validações completas)
+- [x] LogoutView (com auditoria)
+- [x] ResetPinView (admin only)
+- [x] Dashboard básico (será expandido na FASE 4)
+
+**Templates criados**:
+- [x] login.html (responsivo, validação frontend)
+- [x] dashboard.html (placeholder para FASE 4)
+- [x] reset_pin.html (interface admin)
+- [x] base.html atualizado (navbar com menu dropdown)
+
+**Entregas**:
+- ✅ Sistema de login funcional com bloqueio e rate limiting
+- ✅ Desbloqueio automático (30min) + manual (admin)
+- ✅ Middleware de auditoria registrando todas ações
+- ✅ Decorators de permissão funcionais
+- ✅ Testes completos passando (login + bloqueio)
+- ✅ Deploy no Railway atualizado
 
 ---
 
@@ -415,10 +430,11 @@ pmcell/
 
 ## 📈 MÉTRICAS DE PROGRESSO
 
-- **Fases Completas**: 2/10 (FASE 0 ✅, FASE 1 ✅)
-- **Views Implementadas**: 1/25 (home_view)
+- **Fases Completas**: 3/10 (FASE 0 ✅, FASE 1 ✅, FASE 2 ✅)
+- **Views Implementadas**: 5/25 (home_view, login_view, logout_view, reset_pin_view, dashboard)
 - **Modelos Criados**: 5/5 (Usuario, Pedido, ItemPedido, Produto, LogAuditoria ✅)
-- **Testes Escritos**: 0
+- **Templates Criados**: 4 (base.html, login.html, dashboard.html, reset_pin.html)
+- **Testes Escritos**: 2 (test_login.py ✅, test_bloqueio.py ✅)
 - **Deploy Railway**: ✅ FUNCIONANDO - https://web-production-312d.up.railway.app
 
 ## 🐛 BUGS E PROBLEMAS CONHECIDOS
@@ -497,4 +513,46 @@ pmcell/
 
 ---
 
-**Próxima ação**: Iniciar FASE 2 - Sistema de Login e Permissões
+### 04/11/2024 - FASE 2 Completa (21:00)
+- ✅ Sistema de autenticação funcional (numero_login + PIN)
+- ✅ LoginView implementada com todas validações
+- ✅ Bloqueio após 5 tentativas incorretas (30 minutos)
+- ✅ Desbloqueio automático após 30 minutos
+- ✅ Rate limiting: 10 tentativas por numero_login em 15 minutos
+- ✅ LogoutView com auditoria
+- ✅ ResetPinView para admin resetar PINs
+- ✅ Middleware de auditoria (registra todas ações)
+- ✅ Decorators de permissão completos
+- ✅ Timeout de sessão: 8 horas
+- ✅ Templates responsivos criados (login, dashboard, reset_pin)
+- ✅ Navbar com menu dropdown e logout
+- ✅ Testes completos: test_login.py e test_bloqueio.py
+- ✅ Deploy no Railway atualizado
+
+**Estrutura implementada**:
+- Middleware: AuditoriaMiddleware (registra IP, user_agent, ação)
+- Decorators: @login_required_custom, @vendedor_required, @separador_required, @compradora_required, @administrador_required, @admin_or_vendedor
+- Views: login_view, logout_view, reset_pin_view, dashboard
+- Templates: login.html, dashboard.html, reset_pin.html, base.html (atualizado)
+- Rate limiting em memória (RATE_LIMIT_CACHE)
+- Sistema de mensagens (success, error, warning, info)
+
+**Testes realizados**:
+1. ✅ Login com usuário 1000/1234 (sucesso)
+2. ✅ Login com PIN incorreto (rejeitado)
+3. ✅ Bloqueio após 5 tentativas
+4. ✅ Desbloqueio automático (30 minutos)
+5. ✅ Auditoria de login/logout
+6. ✅ Dashboard acessível após login
+7. ✅ Logout funcionando
+
+**Conquistas da FASE 2**:
+1. Sistema de login robusto e seguro
+2. Auditoria completa de todas ações
+3. Controle de permissões por tipo de usuário
+4. Interface responsiva e moderna
+5. Testes automatizados validando funcionalidades
+
+---
+
+**Próxima ação**: Iniciar FASE 3 - Upload e Processamento de PDF

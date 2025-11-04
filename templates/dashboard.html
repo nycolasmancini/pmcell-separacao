@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Sistema PMCELL{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
+        <p class="text-gray-600">Bem-vindo ao sistema de separação de pedidos</p>
+    </div>
+
+    <!-- Informações do Usuário -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Informações do Usuário</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <p class="text-sm text-gray-500">Nome</p>
+                <p class="font-semibold text-gray-800">{{ usuario.nome }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Número de Login</p>
+                <p class="font-semibold text-gray-800">{{ usuario.numero_login }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Tipo de Usuário</p>
+                <p class="font-semibold text-gray-800">
+                    {% if usuario.tipo == 'VENDEDOR' %}
+                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Vendedor</span>
+                    {% elif usuario.tipo == 'SEPARADOR' %}
+                        <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Separador</span>
+                    {% elif usuario.tipo == 'COMPRADORA' %}
+                        <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">Compradora</span>
+                    {% elif usuario.tipo == 'ADMINISTRADOR' %}
+                        <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Administrador</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placeholder para features futuras -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded">
+        <h3 class="font-semibold text-blue-900 mb-2">Dashboard em Desenvolvimento</h3>
+        <p class="text-blue-800 text-sm">
+            O dashboard completo com listagem de pedidos, métricas e funcionalidades em tempo real será implementado na FASE 4.
+        </p>
+    </div>
+</div>
+{% endblock %}

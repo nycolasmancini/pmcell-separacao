@@ -17,8 +17,27 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from .views import home_view
+from apps.core.views import (
+    login_view,
+    logout_view,
+    dashboard,
+    reset_pin_view,
+)
 
 urlpatterns = [
+    # Home (redireciona para login ou dashboard)
     path('', home_view, name='home'),
+
+    # Autenticação
+    path('login/', login_view, name='login'),
+    path('logout/', logout_view, name='logout'),
+
+    # Dashboard
+    path('dashboard/', dashboard, name='dashboard'),
+
+    # Admin - Reset PIN
+    path('admin/reset-pin/<int:user_id>/', reset_pin_view, name='reset_pin'),
+
+    # Django Admin
     path('admin/', admin.site.urls),
 ]

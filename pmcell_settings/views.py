@@ -1,10 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.conf import settings
 
 
 def home_view(request):
-    """View inicial para teste de deploy"""
-    context = {
-        'debug': settings.DEBUG,
-    }
-    return render(request, 'home.html', context)
+    """
+    View inicial - redireciona para dashboard se autenticado,
+    senão para login.
+    """
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return redirect('login')

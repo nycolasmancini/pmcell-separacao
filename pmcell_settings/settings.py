@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.core.middleware.AuditoriaMiddleware',  # Middleware de auditoria (FASE 2)
 ]
 
 ROOT_URLCONF = 'pmcell_settings.urls'
@@ -169,3 +170,26 @@ if 'RAILWAY_ENVIRONMENT' in os.environ:
         'https://*.railway.app',
         'https://*.up.railway.app'
     ]
+
+# ============================================
+# CONFIGURAÇÕES DE SESSÃO - FASE 2
+# ============================================
+
+# Timeout de sessão: 8 horas (28800 segundos)
+SESSION_COOKIE_AGE = 28800
+
+# Salvar sessão a cada request (para manter timeout ativo)
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Expirar sessão ao fechar navegador
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# Nome do cookie de sessão
+SESSION_COOKIE_NAME = 'pmcell_sessionid'
+
+# Cookie httponly (não acessível via JavaScript)
+SESSION_COOKIE_HTTPONLY = True
+
+# Segurança de cookies (apenas HTTPS em produção)
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True

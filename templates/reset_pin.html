@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Resetar PIN - Sistema PMCELL{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Resetar PIN</h1>
+        <p class="text-gray-600">Defina um novo PIN para o usuário</p>
+    </div>
+
+    <!-- Card de Informações do Usuário -->
+    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 mb-6">
+        <h3 class="font-semibold text-blue-900 mb-3">Usuário selecionado:</h3>
+        <div class="space-y-2">
+            <p class="text-blue-800"><span class="font-semibold">Nome:</span> {{ usuario_alvo.nome }}</p>
+            <p class="text-blue-800"><span class="font-semibold">Número de Login:</span> {{ usuario_alvo.numero_login }}</p>
+            <p class="text-blue-800"><span class="font-semibold">Tipo:</span> {{ usuario_alvo.get_tipo_display }}</p>
+            {% if usuario_alvo.bloqueado_ate %}
+                <p class="text-red-600"><span class="font-semibold">Status:</span> BLOQUEADO até {{ usuario_alvo.bloqueado_ate|date:"d/m/Y H:i" }}</p>
+            {% else %}
+                <p class="text-green-600"><span class="font-semibold">Status:</span> Ativo</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Mensagens de feedback -->
+    {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+                <div class="{% if message.tags == 'error' %}bg-red-50 border-l-4 border-red-500 text-red-700{% elif message.tags == 'success' %}bg-green-50 border-l-4 border-green-500 text-green-700{% elif message.tags == 'warning' %}bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700{% else %}bg-blue-50 border-l-4 border-blue-500 text-blue-700{% endif %} p-4 rounded">
+                    <p class="text-sm">{{ message }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Formulário de Reset PIN -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <form method="post" action="" class="space-y-6">
+            {% csrf_token %}
+
+            <!-- Novo PIN -->
+            <div>
+                <label for="novo_pin" class="block text-sm font-medium text-gray-700 mb-2">
+                    Novo PIN (4 dígitos)
+                </label>
+                <input
+                    type="password"
+                    id="novo_pin"
+                    name="novo_pin"
+                    maxlength="4"
+                    pattern="\d{4}"
+                    required
+                    autofocus
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-center text-2xl tracking-widest font-mono"
+                    placeholder="••••"
+                    inputmode="numeric"
+                >
+                <p class="mt-2 text-sm text-gray-500">
+                    Digite o novo PIN de 4 dígitos que será atribuído ao usuário.
+                </p>
+            </div>
+
+            <!-- Mostrar PIN (toggle) -->
+            <div class="flex items-center">
+                <input
+                    type="checkbox"
+                    id="mostrar_pin"
+                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                >
+                <label for="mostrar_pin" class="ml-2 text-sm text-gray-700">
+                    Mostrar PIN
+                </label>
+            </div>
+
+            <!-- Aviso -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+                <p class="text-sm text-yellow-800">
+                    <span class="font-semibold">Atenção:</span> Esta ação irá:
+                </p>
+                <ul class="list-disc list-inside text-sm text-yellow-800 mt-2 space-y-1">
+                    <li>Redefinir o PIN do usuário</li>
+                    <li>Zerar o contador de tentativas de login</li>
+                    <li>Desbloquear o usuário (se estiver bloqueado)</li>
+                    <li>Registrar esta ação no log de auditoria</li>
+                </ul>
+            </div>
+
+            <!-- Botões -->
+            <div class="flex gap-4">
+                <button
+                    type="submit"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 shadow-md hover:shadow-lg"
+                >
+                    Resetar PIN
+                </button>
+                <a
+                    href="{% url 'dashboard' %}"
+                    class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-4 rounded-lg transition duration-200 text-center"
+                >
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Script para funcionalidades -->
+<script>
+    // Permitir apenas números
+    document.getElementById('novo_pin').addEventListener('input', function(e) {
+        this.value = this.value.replace(/\D/g, '').slice(0, 4);
+    });
+
+    // Toggle mostrar PIN
+    document.getElementById('mostrar_pin').addEventListener('change', function() {
+        const pinInput = document.getElementById('novo_pin');
+        pinInput.type = this.checked ? 'text' : 'password';
+    });
+</script>
+{% endblock %}

@@ -28,12 +28,20 @@ if 'RAILWAY_ENVIRONMENT' in os.environ:
 
 # Application definition
 INSTALLED_APPS = [
+    'daphne',  # Django Channels ASGI server (deve estar antes de django.contrib.staticfiles)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Third party
+    'channels',
+
+    # Apps do projeto
+    'apps.core',
+    'apps.api',
 ]
 
 MIDDLEWARE = [
@@ -66,6 +74,20 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'pmcell_settings.wsgi.application'
+
+# ASGI Application (Django Channels)
+ASGI_APPLICATION = 'pmcell_settings.asgi.application'
+
+# Custom User Model
+AUTH_USER_MODEL = 'core.Usuario'
+
+# Django Channels
+CHANNEL_LAYERS = {
+    'default': {
+        # Usar InMemoryChannelLayer (ideal para Railway free tier)
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 
 # Database

@@ -235,7 +235,7 @@ class DashboardWebSocket {
                 </div>
 
                 <div class="mt-3 flex gap-2">
-                    <a href="/pedido/${pedido.id}/"
+                    <a href="/pedidos/${pedido.id}/"
                        class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                         Ver Detalhes →
                     </a>

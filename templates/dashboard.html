@@ -208,7 +208,7 @@
                 </div>
 
                 <div class="mt-4 pt-3 border-t border-gray-200">
-                    <a href="/pedido/{{ pedido.id }}/"
+                    <a href="{% url 'pedido_detalhe' pedido.id %}"
                        class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                         Ver Detalhes →
                     </a>

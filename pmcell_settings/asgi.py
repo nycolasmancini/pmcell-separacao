@@ -20,15 +20,13 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pmcell_settings.settings')
 # is populated before importing code that may import ORM models.
 django_asgi_app = get_asgi_application()
 
-# Import consumers depois de inicializar o Django
-# from apps.core.consumers import DashboardConsumer
+# Import routing depois de inicializar o Django
+from apps.core.routing import websocket_urlpatterns
 
-# WebSocket URL routing (será implementado na FASE 4)
-websocket_urlpatterns = [
-    # path('ws/dashboard/', DashboardConsumer.as_asgi()),
-    # path('ws/pedido/<int:pedido_id>/', PedidoDetalheConsumer.as_asgi()),
-    # path('ws/compras/', PainelComprasConsumer.as_asgi()),
-]
+# WebSocket URL routing
+# FASE 4: DashboardConsumer ✅
+# FASE 5: PedidoDetalheConsumer (futuro)
+# FASE 6: PainelComprasConsumer (futuro)
 
 application = ProtocolTypeRouter({
     'http': django_asgi_app,

@@ -1,50 +1,260 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Dashboard - Sistema PMCELL{% endblock %}
 
+{% block extra_head %}
+<script src="{% static 'js/dashboard.js' %}" defer></script>
+{% endblock %}
+
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8"
+     x-data="{
+         filtroStatus: 'TODOS',
+         filtroVendedor: 'TODOS',
+         filtroDataInicio: '',
+         filtroDataFim: '',
+
+         filtrarPedidos() {
+             let pedidos = document.querySelectorAll('[data-pedido-id]');
+             pedidos.forEach(pedido => {
+                 let mostrar = true;
+
+                 // Filtro por status
+                 if (this.filtroStatus !== 'TODOS') {
+                     if (pedido.dataset.pedidoStatus !== this.filtroStatus) {
+                         mostrar = false;
+                     }
+                 }
+
+                 // Filtro por vendedor
+                 if (this.filtroVendedor !== 'TODOS') {
+                     if (pedido.dataset.vendedorId !== this.filtroVendedor) {
+                         mostrar = false;
+                     }
+                 }
+
+                 // Aplicar visibilidade
+                 if (mostrar) {
+                     pedido.style.display = 'block';
+                 } else {
+                     pedido.style.display = 'none';
+                 }
+             });
+         }
+     }"
+     @change="filtrarPedidos()">
+
     <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
-        <p class="text-gray-600">Bem-vindo ao sistema de separação de pedidos</p>
+    <div class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Dashboard</h1>
+            <p class="text-gray-600">
+                Bem-vindo, <strong>{{ usuario.nome }}</strong>
+                <span id="ws-status-indicator" class="inline-block w-2 h-2 bg-gray-400 rounded-full ml-2" title="Conectando..."></span>
+            </p>
+        </div>
+
+        {% if usuario.tipo == 'VENDEDOR' or usuario.tipo == 'ADMINISTRADOR' %}
+        <a href="{% url 'upload_pdf' %}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+            + Novo Orçamento
+        </a>
+        {% endif %}
     </div>
 
-    <!-- Informações do Usuário -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">Informações do Usuário</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <p class="text-sm text-gray-500">Nome</p>
-                <p class="font-semibold text-gray-800">{{ usuario.nome }}</p>
+    <!-- Indicadores no Topo -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Tempo Médio de Separação Hoje -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-500 font-medium">Tempo Médio Separação (Hoje)</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ metricas.tempo_medio }}</p>
+                </div>
             </div>
-            <div>
-                <p class="text-sm text-gray-500">Número de Login</p>
-                <p class="font-semibold text-gray-800">{{ usuario.numero_login }}</p>
+        </div>
+
+        <!-- Pedidos em Aberto -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-500 font-medium">Pedidos em Aberto</p>
+                    <p class="text-3xl font-bold text-gray-900" id="metrica-em-aberto">{{ metricas.pedidos_em_aberto }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ metricas.total_pedidos_hoje }} inseridos hoje</p>
+                </div>
             </div>
-            <div>
-                <p class="text-sm text-gray-500">Tipo de Usuário</p>
-                <p class="font-semibold text-gray-800">
-                    {% if usuario.tipo == 'VENDEDOR' %}
-                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Vendedor</span>
-                    {% elif usuario.tipo == 'SEPARADOR' %}
-                        <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Separador</span>
-                    {% elif usuario.tipo == 'COMPRADORA' %}
-                        <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">Compradora</span>
-                    {% elif usuario.tipo == 'ADMINISTRADOR' %}
-                        <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Administrador</span>
-                    {% endif %}
-                </p>
+        </div>
+
+        <!-- Card Reservado (Futuro) -->
+        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500 opacity-75">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm text-gray-500 font-medium">Métricas Avançadas</p>
+                    <p class="text-lg font-bold text-gray-900">Em breve</p>
+                    <p class="text-xs text-gray-500 mt-1">FASE 8</p>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Placeholder para features futuras -->
-    <div class="bg-blue-50 border-l-4 border-blue-500 p-6 rounded">
-        <h3 class="font-semibold text-blue-900 mb-2">Dashboard em Desenvolvimento</h3>
-        <p class="text-blue-800 text-sm">
-            O dashboard completo com listagem de pedidos, métricas e funcionalidades em tempo real será implementado na FASE 4.
-        </p>
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Filtros</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Filtro por Status -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select x-model="filtroStatus"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="TODOS">Todos</option>
+                    <option value="PENDENTE">Pendente</option>
+                    <option value="EM_SEPARACAO">Em Separação</option>
+                    <option value="AGUARDANDO_COMPRA">Aguardando Compra</option>
+                </select>
+            </div>
+
+            <!-- Filtro por Vendedor -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Vendedor</label>
+                <select x-model="filtroVendedor"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="TODOS">Todos</option>
+                    {% for vendedor in vendedores %}
+                    <option value="{{ vendedor.id }}">{{ vendedor.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Filtro por Data (Reservado para futuro) -->
+            <div class="opacity-50">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Data Início</label>
+                <input type="date"
+                       disabled
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed">
+            </div>
+
+            <div class="opacity-50">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Data Fim</label>
+                <input type="date"
+                       disabled
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed">
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Pedidos -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">Pedidos Ativos</h2>
+            <span class="text-sm text-gray-600">Total: <strong>{{ pedidos|length }}</strong></span>
+        </div>
+
+        {% if pedidos %}
+        <div id="pedidos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for pedido in pedidos %}
+            <div class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
+                 data-pedido-id="{{ pedido.id }}"
+                 data-pedido-status="{{ pedido.status }}"
+                 data-vendedor-id="{{ pedido.vendedor_id }}">
+
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        Orçamento #{{ pedido.numero_orcamento }}
+                    </h3>
+                    <span class="{% if pedido.status == 'PENDENTE' %}px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-800{% elif pedido.status == 'EM_SEPARACAO' %}px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800{% elif pedido.status == 'AGUARDANDO_COMPRA' %}px-2 py-1 text-xs font-medium rounded bg-orange-100 text-orange-800{% endif %}"
+                          data-status>
+                        {{ pedido.status_display }}
+                    </span>
+                </div>
+
+                <div class="text-sm text-gray-600 space-y-2">
+                    <p><strong>Cliente:</strong> {{ pedido.cliente }}</p>
+                    <p><strong>Vendedor:</strong> {{ pedido.vendedor }}</p>
+                    <p><strong>Data:</strong> {{ pedido.data }}</p>
+                    <p><strong>Itens:</strong> {{ pedido.total_itens }}</p>
+                    <p class="text-xs text-gray-500">Criado em: {{ pedido.data_criacao }}</p>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-gray-200">
+                    <a href="/pedido/{{ pedido.id }}/"
+                       class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                        Ver Detalhes →
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-gray-50 rounded-lg p-12 text-center">
+            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">Nenhum pedido ativo</h3>
+            <p class="text-gray-500 mb-4">Não há pedidos pendentes ou em separação no momento.</p>
+            {% if usuario.tipo == 'VENDEDOR' or usuario.tipo == 'ADMINISTRADOR' %}
+            <a href="{% url 'upload_pdf' %}" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                + Criar Primeiro Pedido
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Ações Rápidas (Fases Futuras) -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Acesso Rápido</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% if usuario.tipo == 'SEPARADOR' or usuario.tipo == 'ADMINISTRADOR' %}
+            <a href="#" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 opacity-50 cursor-not-allowed">
+                <svg class="w-6 h-6 text-yellow-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                </svg>
+                <div>
+                    <p class="font-semibold text-gray-900">Separação</p>
+                    <p class="text-xs text-gray-500">FASE 5</p>
+                </div>
+            </a>
+            {% endif %}
+
+            {% if usuario.tipo == 'COMPRADORA' or usuario.tipo == 'ADMINISTRADOR' %}
+            <a href="#" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 opacity-50 cursor-not-allowed">
+                <svg class="w-6 h-6 text-purple-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <div>
+                    <p class="font-semibold text-gray-900">Compras</p>
+                    <p class="text-xs text-gray-500">FASE 6</p>
+                </div>
+            </a>
+            {% endif %}
+
+            {% if usuario.tipo == 'ADMINISTRADOR' %}
+            <a href="#" class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 opacity-50 cursor-not-allowed">
+                <svg class="w-6 h-6 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                <div>
+                    <p class="font-semibold text-gray-900">Usuários</p>
+                    <p class="text-xs text-gray-500">FASE 7</p>
+                </div>
+            </a>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}

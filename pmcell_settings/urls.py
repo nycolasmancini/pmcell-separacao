@@ -22,6 +22,9 @@ from apps.core.views import (
     logout_view,
     dashboard,
     reset_pin_view,
+    upload_pdf_view,
+    confirmar_pedido_view,
+    pedido_detalhe_view,
 )
 
 urlpatterns = [
@@ -34,6 +37,11 @@ urlpatterns = [
 
     # Dashboard
     path('dashboard/', dashboard, name='dashboard'),
+
+    # Upload de PDF (FASE 3)
+    path('pedidos/upload-pdf/', upload_pdf_view, name='upload_pdf'),
+    path('pedidos/confirmar/', confirmar_pedido_view, name='confirmar_pedido'),
+    path('pedidos/<int:pedido_id>/', pedido_detalhe_view, name='pedido_detalhe'),
 
     # Admin - Reset PIN
     path('admin/reset-pin/<int:user_id>/', reset_pin_view, name='reset_pin'),

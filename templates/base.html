@@ -33,22 +33,22 @@
                     <a href="{% url 'dashboard' %}" class="hover:text-blue-200 transition">Dashboard</a>
 
                     {% if user.tipo == 'VENDEDOR' or user.tipo == 'ADMINISTRADOR' %}
-                        <a href="#" class="hover:text-blue-200 transition">Meus Pedidos</a>
+                        <a href="{% url 'upload_pdf' %}" class="hover:text-blue-200 transition">Novo Orçamento</a>
+                        <a href="#" class="hover:text-blue-200 transition opacity-50">Meus Pedidos</a>
                     {% endif %}
 
                     {% if user.tipo == 'SEPARADOR' or user.tipo == 'ADMINISTRADOR' %}
-                        <a href="#" class="hover:text-blue-200 transition">Separação</a>
+                        <a href="#" class="hover:text-blue-200 transition opacity-50">Separação</a>
                     {% endif %}
 
                     {% if user.tipo == 'COMPRADORA' or user.tipo == 'ADMINISTRADOR' %}
-                        <a href="#" class="hover:text-blue-200 transition">Compras</a>
+                        <a href="#" class="hover:text-blue-200 transition opacity-50">Compras</a>
                     {% endif %}
 
                     {% if user.tipo == 'ADMINISTRADOR' %}
-                        <a href="#" class="hover:text-blue-200 transition">Usuários</a>
+                        <a href="#" class="hover:text-blue-200 transition opacity-50">Usuários</a>
                     {% endif %}
                 </div>
-
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4" x-data="{ open: false }">
                     <!-- User Info -->

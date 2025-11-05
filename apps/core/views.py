@@ -332,8 +332,280 @@ def reset_pin_view(request, user_id):
 @login_required_custom
 def dashboard(request):
     """
-    Dashboard principal (será implementado na FASE 4)
+    Dashboard principal com pedidos ativos e métricas do dia.
+    FASE 4: WebSocket + filtros client-side
     """
-    return render(request, 'dashboard.html', {
-        'usuario': request.user
+    from apps.core.utils import calcular_metricas_dia, formatar_tempo
+
+    # Buscar apenas pedidos ativos (não finalizados e não deletados)
+    pedidos = Pedido.objects.filter(
+        deletado=False
+    ).exclude(
+        status__in=['FINALIZADO', 'CANCELADO']
+    ).select_related('vendedor').order_by('-data_criacao')
+
+    # Calcular métricas do dia
+    metricas = calcular_metricas_dia()
+
+    # Lista de vendedores para o filtro
+    vendedores = Usuario.objects.filter(
+        tipo='VENDEDOR',
+        ativo=True
+    ).order_by('nome')
+
+    # Preparar dados dos pedidos para o template
+    pedidos_data = []
+    for pedido in pedidos:
+        pedidos_data.append({
+            'id': pedido.id,
+            'numero_orcamento': pedido.numero_orcamento,
+            'cliente': pedido.nome_cliente,
+            'vendedor': pedido.vendedor.nome,
+            'vendedor_id': pedido.vendedor.id,
+            'status': pedido.status,
+            'status_display': pedido.get_status_display(),
+            'data': pedido.data.strftime('%d/%m/%Y'),
+            'data_criacao': pedido.data_criacao.strftime('%d/%m/%Y %H:%M'),
+            'total_itens': pedido.itens.count(),
+        })
+
+    context = {
+        'usuario': request.user,
+        'pedidos': pedidos_data,
+        'vendedores': vendedores,
+        'metricas': {
+            'tempo_medio': formatar_tempo(metricas['tempo_medio_separacao']),
+            'pedidos_em_aberto': metricas['pedidos_em_aberto'],
+            'total_pedidos_hoje': metricas['total_pedidos_hoje'],
+        }
+    }
+
+    return render(request, 'dashboard.html', context)
+
+
+@login_required_custom
+def pedido_detalhe_view(request, pedido_id):
+    """
+    View de detalhes do pedido (será implementada na FASE 5)
+    Por enquanto, redireciona para dashboard com mensagem
+    """
+    pedido = get_object_or_404(Pedido, id=pedido_id)
+    messages.success(request, f'Pedido #{pedido.numero_orcamento} criado com sucesso!')
+    return redirect('dashboard')
+
+
+# =====================
+# UPLOAD E PROCESSAMENTO DE PDF - FASE 3
+# =====================
+
+from .forms import UploadPDFForm, ConfirmarPedidoForm
+from .pdf_parser import extrair_dados_pdf, validar_orcamento, PDFParserError
+from .models import Pedido, Produto, ItemPedido
+from decimal import Decimal
+from django.db import transaction
+
+
+@login_required_custom
+@require_http_methods(["GET", "POST"])
+def upload_pdf_view(request):
+    """
+    View para upload de PDF de orçamento.
+    Disponível apenas para VENDEDOR ou ADMINISTRADOR.
+    """
+    # Verificar permissão (somente vendedor ou admin)
+    if request.user.tipo not in ['VENDEDOR', 'ADMINISTRADOR']:
+        messages.error(request, 'Você não tem permissão para fazer upload de orçamentos.')
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        form = UploadPDFForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            arquivo_pdf = form.cleaned_data['arquivo_pdf']
+
+            try:
+                # Extrair dados do PDF
+                dados = extrair_dados_pdf(arquivo_pdf)
+
+                # Validar dados extraídos
+                valido, erro = validar_orcamento(dados)
+                if not valido:
+                    messages.error(request, f'Erro na validação do PDF: {erro}')
+                    return render(request, 'upload_pdf.html', {'form': form})
+
+                # Verificar duplicata
+                if Pedido.objects.filter(numero_orcamento=dados['numero_orcamento']).exists():
+                    messages.error(request,
+                        f'Orçamento #{dados["numero_orcamento"]} já existe no sistema. '
+                        'Não é possível importar orçamentos duplicados.')
+                    return render(request, 'upload_pdf.html', {'form': form})
+
+                # Armazenar dados na sessão para a próxima etapa
+                request.session['dados_pdf'] = {
+                    'numero_orcamento': dados['numero_orcamento'],
+                    'codigo_cliente': dados['codigo_cliente'],
+                    'nome_cliente': dados['nome_cliente'],
+                    'data': dados['data'].isoformat(),
+                    'produtos': [
+                        {
+                            'codigo': p['codigo'],
+                            'descricao': p['descricao'],
+                            'quantidade': str(p['quantidade']),
+                            'preco_unitario': str(p['preco_unitario'])
+                        }
+                        for p in dados['produtos']
+                    ]
+                }
+
+                # Registrar no log
+                ip = get_client_ip(request)
+                user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+                LogAuditoria.objects.create(
+                    usuario=request.user,
+                    acao='upload_pdf',
+                    modelo='Pedido',
+                    objeto_id=0,
+                    dados_novos={
+                        'numero_orcamento': dados['numero_orcamento'],
+                        'total_produtos': len(dados['produtos'])
+                    },
+                    ip=ip,
+                    user_agent=user_agent
+                )
+
+                messages.success(request, f'PDF processado com sucesso! {len(dados["produtos"])} produtos encontrados.')
+                return redirect('confirmar_pedido')
+
+            except PDFParserError as e:
+                messages.error(request, f'Erro ao processar PDF: {str(e)}')
+                return render(request, 'upload_pdf.html', {'form': form})
+            except Exception as e:
+                messages.error(request, f'Erro inesperado ao processar PDF: {str(e)}')
+                return render(request, 'upload_pdf.html', {'form': form})
+    else:
+        form = UploadPDFForm()
+
+    return render(request, 'upload_pdf.html', {'form': form})
+
+
+@login_required_custom
+@require_http_methods(["GET", "POST"])
+def confirmar_pedido_view(request):
+    """
+    View para confirmar o pedido após upload do PDF.
+    Exibe dados extraídos e solicita logística/embalagem.
+    """
+    # Verificar se há dados na sessão
+    dados_pdf = request.session.get('dados_pdf')
+    if not dados_pdf:
+        messages.error(request, 'Nenhum PDF foi processado. Por favor, faça o upload primeiro.')
+        return redirect('upload_pdf')
+
+    if request.method == 'POST':
+        form = ConfirmarPedidoForm(request.POST)
+
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Criar pedido
+                    pedido = Pedido.objects.create(
+                        numero_orcamento=dados_pdf['numero_orcamento'],
+                        codigo_cliente=dados_pdf['codigo_cliente'],
+                        nome_cliente=dados_pdf['nome_cliente'],
+                        vendedor=request.user,
+                        data=dados_pdf['data'],
+                        logistica=form.cleaned_data['logistica'],
+                        embalagem=form.cleaned_data['embalagem'],
+                        observacoes=form.cleaned_data.get('observacoes', ''),
+                        status='PENDENTE'
+                    )
+
+                    # Criar produtos e itens
+                    produtos_criados = 0
+                    for produto_data in dados_pdf['produtos']:
+                        # Buscar ou criar produto
+                        produto, created = Produto.objects.get_or_create(
+                            codigo=produto_data['codigo'],
+                            defaults={
+                                'descricao': produto_data['descricao'],
+                                'criado_automaticamente': True
+                            }
+                        )
+
+                        if created:
+                            produtos_criados += 1
+
+                        # Criar item do pedido
+                        ItemPedido.objects.create(
+                            pedido=pedido,
+                            produto=produto,
+                            quantidade_solicitada=Decimal(produto_data['quantidade']),
+                            preco_unitario=Decimal(produto_data['preco_unitario'])
+                        )
+
+                    # Registrar no log
+                    ip = get_client_ip(request)
+                    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+                    LogAuditoria.objects.create(
+                        usuario=request.user,
+                        acao='criar_pedido',
+                        modelo='Pedido',
+                        objeto_id=pedido.id,
+                        dados_novos={
+                            'numero_orcamento': pedido.numero_orcamento,
+                            'cliente': pedido.nome_cliente,
+                            'total_itens': len(dados_pdf['produtos']),
+                            'produtos_criados': produtos_criados
+                        },
+                        ip=ip,
+                        user_agent=user_agent
+                    )
+
+                    # Broadcast WebSocket - notificar todos os dashboards
+                    from channels.layers import get_channel_layer
+                    from asgiref.sync import async_to_sync
+
+                    channel_layer = get_channel_layer()
+                    if channel_layer:
+                        async_to_sync(channel_layer.group_send)(
+                            "dashboard",
+                            {
+                                "type": "pedido_criado",
+                                "pedido": {
+                                    "id": pedido.id,
+                                    "numero_orcamento": pedido.numero_orcamento,
+                                    "cliente": pedido.nome_cliente,
+                                    "vendedor": pedido.vendedor.nome,
+                                    "vendedor_id": pedido.vendedor.id,
+                                    "status": pedido.status,
+                                    "status_display": pedido.get_status_display(),
+                                    "data": pedido.data.strftime('%d/%m/%Y'),
+                                    "data_criacao": pedido.data_criacao.strftime('%d/%m/%Y %H:%M'),
+                                    "total_itens": pedido.itens.count(),
+                                }
+                            }
+                        )
+
+                    # Limpar sessão
+                    del request.session['dados_pdf']
+
+                    msg_produtos = f' ({produtos_criados} produto(s) novo(s) criado(s))' if produtos_criados > 0 else ''
+                    messages.success(request,
+                        f'Pedido #{pedido.numero_orcamento} criado com sucesso! '
+                        f'{len(dados_pdf["produtos"])} item(ns) adicionado(s){msg_produtos}.')
+
+                    return redirect('pedido_detalhe', pedido_id=pedido.id)
+
+            except Exception as e:
+                messages.error(request, f'Erro ao criar pedido: {str(e)}')
+                return render(request, 'confirmar_pedido.html', {
+                    'form': form,
+                    'dados_pdf': dados_pdf
+                })
+    else:
+        form = ConfirmarPedidoForm()
+
+    return render(request, 'confirmar_pedido.html', {
+        'form': form,
+        'dados_pdf': dados_pdf
     })

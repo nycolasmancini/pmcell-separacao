@@ -557,6 +557,12 @@ def confirmar_pedido_view(request):
         messages.error(request, 'Nenhum PDF foi processado. Por favor, faça o upload primeiro.')
         return redirect('upload_pdf')
 
+    # Converter valores de string para Decimal para uso no template
+    # (necessário porque session armazena como string para JSON serialization)
+    for produto in dados_pdf['produtos']:
+        produto['quantidade'] = Decimal(produto['quantidade'])
+        produto['preco_unitario'] = Decimal(produto['preco_unitario'])
+
     if request.method == 'POST':
         form = ConfirmarPedidoForm(request.POST)
 

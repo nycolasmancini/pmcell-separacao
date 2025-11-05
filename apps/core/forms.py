@@ -151,5 +151,281 @@ class MarcarCompraForm(forms.Form):
             self.fields['outros_pedidos'].choices = choices
 
 
-# Forms que serão implementados nas próximas fases
-# FASE 7: UsuarioForm, EditarUsuarioForm
+# =====================
+# FASE 7: Gestão de Usuários
+# =====================
+
+class CriarUsuarioForm(forms.Form):
+    """Formulário para criar novo usuário"""
+
+    TIPO_CHOICES = [
+        ('', 'Selecione...'),
+        ('VENDEDOR', 'Vendedor'),
+        ('SEPARADOR', 'Separador'),
+        ('COMPRADORA', 'Compradora'),
+        ('ADMINISTRADOR', 'Administrador'),
+    ]
+
+    numero_login = forms.IntegerField(
+        label='Número de Login',
+        min_value=1000,
+        max_value=9999,
+        required=True,
+        widget=forms.NumberInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': '1000-9999'
+        }),
+        help_text='Número de 4 dígitos único para login'
+    )
+
+    nome = forms.CharField(
+        label='Nome Completo',
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Nome completo do usuário'
+        })
+    )
+
+    tipo = forms.ChoiceField(
+        label='Tipo de Usuário',
+        choices=TIPO_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        })
+    )
+
+    pin = forms.CharField(
+        label='PIN',
+        min_length=4,
+        max_length=4,
+        required=True,
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': '****'
+        }),
+        help_text='PIN de 4 dígitos numéricos'
+    )
+
+    pin_confirmacao = forms.CharField(
+        label='Confirmar PIN',
+        min_length=4,
+        max_length=4,
+        required=True,
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': '****'
+        })
+    )
+
+    def clean_numero_login(self):
+        """Valida se o número de login é único"""
+        numero_login = self.cleaned_data.get('numero_login')
+
+        if Usuario.objects.filter(numero_login=numero_login).exists():
+            raise forms.ValidationError(f'Número de login {numero_login} já está em uso.')
+
+        return numero_login
+
+    def clean_pin(self):
+        """Valida se o PIN contém apenas dígitos"""
+        pin = self.cleaned_data.get('pin')
+
+        if not pin.isdigit():
+            raise forms.ValidationError('PIN deve conter apenas números.')
+
+        if len(pin) != 4:
+            raise forms.ValidationError('PIN deve ter exatamente 4 dígitos.')
+
+        return pin
+
+    def clean(self):
+        """Valida se os PINs conferem"""
+        cleaned_data = super().clean()
+        pin = cleaned_data.get('pin')
+        pin_confirmacao = cleaned_data.get('pin_confirmacao')
+
+        if pin and pin_confirmacao and pin != pin_confirmacao:
+            raise forms.ValidationError('Os PINs não conferem.')
+
+        return cleaned_data
+
+    def clean_tipo(self):
+        """Valida o tipo de usuário"""
+        tipo = self.cleaned_data.get('tipo')
+        if not tipo:
+            raise forms.ValidationError('Selecione o tipo de usuário.')
+        return tipo
+
+
+class EditarUsuarioForm(forms.Form):
+    """Formulário para editar usuário existente"""
+
+    TIPO_CHOICES = [
+        ('VENDEDOR', 'Vendedor'),
+        ('SEPARADOR', 'Separador'),
+        ('COMPRADORA', 'Compradora'),
+        ('ADMINISTRADOR', 'Administrador'),
+    ]
+
+    nome = forms.CharField(
+        label='Nome Completo',
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        })
+    )
+
+    tipo = forms.ChoiceField(
+        label='Tipo de Usuário',
+        choices=TIPO_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        })
+    )
+
+    ativo = forms.BooleanField(
+        label='Usuário Ativo',
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
+        }),
+        help_text='Desmarque para desativar o usuário (bloquear login e ocultar das listas)'
+    )
+
+
+class ResetarPinForm(forms.Form):
+    """Formulário para resetar PIN de usuário"""
+
+    pin = forms.CharField(
+        label='Novo PIN',
+        min_length=4,
+        max_length=4,
+        required=True,
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': '****'
+        }),
+        help_text='PIN de 4 dígitos numéricos'
+    )
+
+    pin_confirmacao = forms.CharField(
+        label='Confirmar Novo PIN',
+        min_length=4,
+        max_length=4,
+        required=True,
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': '****'
+        })
+    )
+
+    def clean_pin(self):
+        """Valida se o PIN contém apenas dígitos"""
+        pin = self.cleaned_data.get('pin')
+
+        if not pin.isdigit():
+            raise forms.ValidationError('PIN deve conter apenas números.')
+
+        if len(pin) != 4:
+            raise forms.ValidationError('PIN deve ter exatamente 4 dígitos.')
+
+        return pin
+
+    def clean(self):
+        """Valida se os PINs conferem"""
+        cleaned_data = super().clean()
+        pin = cleaned_data.get('pin')
+        pin_confirmacao = cleaned_data.get('pin_confirmacao')
+
+        if pin and pin_confirmacao and pin != pin_confirmacao:
+            raise forms.ValidationError('Os PINs não conferem.')
+
+        return cleaned_data
+
+
+# =====================
+# FASE 8: Histórico e Métricas
+# =====================
+
+class HistoricoFiltrosForm(forms.Form):
+    """Formulário para filtrar histórico de pedidos"""
+
+    STATUS_CHOICES = [
+        ('', 'Todos os Status'),
+        ('PENDENTE', 'Pendente'),
+        ('EM_SEPARACAO', 'Em Separação'),
+        ('AGUARDANDO_COMPRA', 'Aguardando Compra'),
+        ('FINALIZADO', 'Finalizado'),
+        ('CANCELADO', 'Cancelado'),
+    ]
+
+    data_inicio = forms.DateField(
+        label='Data Início',
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        }),
+        help_text='Data inicial do período'
+    )
+
+    data_fim = forms.DateField(
+        label='Data Fim',
+        required=False,
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        }),
+        help_text='Data final do período'
+    )
+
+    vendedor = forms.ChoiceField(
+        label='Vendedor',
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        }),
+        help_text='Filtrar por vendedor específico'
+    )
+
+    status = forms.ChoiceField(
+        label='Status',
+        choices=STATUS_CHOICES,
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Carregar vendedores ativos para o dropdown
+        vendedores = Usuario.objects.filter(
+            tipo='VENDEDOR',
+            ativo=True
+        ).order_by('nome')
+
+        vendedor_choices = [('', 'Todos os Vendedores')]
+        vendedor_choices.extend([
+            (str(v.id), f"{v.nome} ({v.numero_login})")
+            for v in vendedores
+        ])
+
+        self.fields['vendedor'].choices = vendedor_choices
+
+    def clean(self):
+        """Valida o período de datas"""
+        cleaned_data = super().clean()
+        data_inicio = cleaned_data.get('data_inicio')
+        data_fim = cleaned_data.get('data_fim')
+
+        if data_inicio and data_fim and data_inicio > data_fim:
+            raise forms.ValidationError('Data de início não pode ser posterior à data de fim.')
+
+        return cleaned_data

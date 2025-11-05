@@ -4,8 +4,15 @@ from django.contrib.auth import login, logout
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
-from datetime import timedelta
-from .models import Usuario, LogAuditoria
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from datetime import timedelta, datetime
+from .models import Usuario, LogAuditoria, Pedido, ItemPedido, Produto
+from .forms import (
+    CriarUsuarioForm,
+    EditarUsuarioForm,
+    ResetarPinForm,
+    HistoricoFiltrosForm,
+)
 from .permissions import (
     login_required_custom,
     administrador_required,
@@ -1390,3 +1397,398 @@ def historico_compras_view(request):
     }
 
     return render(request, 'historico_compras.html', context)
+
+
+# =====================
+# FASE 7: GESTÃO DE USUÁRIOS
+# =====================
+
+@login_required_custom
+@administrador_required
+@require_http_methods(["GET"])
+def lista_usuarios_view(request):
+    """
+    Lista todos os usuários do sistema (ativos e inativos).
+    Apenas ADMINISTRADOR tem acesso.
+    """
+    usuarios = Usuario.objects.all().order_by('-ativo', 'numero_login')
+
+    context = {
+        'usuarios': usuarios,
+    }
+
+    return render(request, 'lista_usuarios.html', context)
+
+
+@login_required_custom
+@administrador_required
+@require_http_methods(["GET", "POST"])
+def criar_usuario_view(request):
+    """
+    Cria novo usuário no sistema.
+    Admin define: numero_login, nome, tipo, PIN inicial.
+    Apenas ADMINISTRADOR tem acesso.
+    """
+    if request.method == 'POST':
+        form = CriarUsuarioForm(request.POST)
+
+        if form.is_valid():
+            # Criar usuário
+            usuario = Usuario(
+                numero_login=form.cleaned_data['numero_login'],
+                nome=form.cleaned_data['nome'],
+                tipo=form.cleaned_data['tipo'],
+                ativo=True,
+            )
+
+            # Definir PIN
+            usuario.set_pin(form.cleaned_data['pin'])
+
+            # Salvar
+            usuario.save()
+
+            # Auditoria
+            LogAuditoria.objects.create(
+                usuario=request.user,
+                acao='criar_usuario',
+                modelo='Usuario',
+                objeto_id=usuario.id,
+                dados_novos={
+                    'numero_login': usuario.numero_login,
+                    'nome': usuario.nome,
+                    'tipo': usuario.tipo,
+                },
+                ip=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
+            )
+
+            messages.success(request, f'Usuário {usuario.nome} ({usuario.numero_login}) criado com sucesso!')
+            return redirect('lista_usuarios')
+
+        else:
+            # Mostrar erros do formulário
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
+
+    else:
+        form = CriarUsuarioForm()
+
+    context = {
+        'form': form,
+    }
+
+    return render(request, 'criar_usuario.html', context)
+
+
+@login_required_custom
+@administrador_required
+@require_http_methods(["GET", "POST"])
+def editar_usuario_view(request, usuario_id):
+    """
+    Edita usuário existente (nome, tipo, ativo).
+    Não permite editar numero_login nem PIN.
+    Apenas ADMINISTRADOR tem acesso.
+    """
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    # Não permite editar o próprio usuário admin inicial (1000)
+    if usuario.numero_login == 1000 and request.user.numero_login != 1000:
+        messages.error(request, 'Não é permitido editar o administrador principal.')
+        return redirect('lista_usuarios')
+
+    if request.method == 'POST':
+        form = EditarUsuarioForm(request.POST)
+
+        if form.is_valid():
+            # Dados anteriores para auditoria
+            dados_anteriores = {
+                'nome': usuario.nome,
+                'tipo': usuario.tipo,
+                'ativo': usuario.ativo,
+            }
+
+            # Atualizar dados
+            usuario.nome = form.cleaned_data['nome']
+            usuario.tipo = form.cleaned_data['tipo']
+            usuario.ativo = form.cleaned_data['ativo']
+            usuario.save()
+
+            # Auditoria
+            LogAuditoria.objects.create(
+                usuario=request.user,
+                acao='editar_usuario',
+                modelo='Usuario',
+                objeto_id=usuario.id,
+                dados_anteriores=dados_anteriores,
+                dados_novos={
+                    'nome': usuario.nome,
+                    'tipo': usuario.tipo,
+                    'ativo': usuario.ativo,
+                },
+                ip=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
+            )
+
+            messages.success(request, f'Usuário {usuario.nome} atualizado com sucesso!')
+            return redirect('lista_usuarios')
+
+        else:
+            # Mostrar erros do formulário
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
+
+    else:
+        # Preencher formulário com dados atuais
+        form = EditarUsuarioForm(initial={
+            'nome': usuario.nome,
+            'tipo': usuario.tipo,
+            'ativo': usuario.ativo,
+        })
+
+    context = {
+        'form': form,
+        'usuario': usuario,
+    }
+
+    return render(request, 'editar_usuario.html', context)
+
+
+@login_required_custom
+@administrador_required
+@require_http_methods(["GET", "POST"])
+def resetar_pin_usuario_view(request, usuario_id):
+    """
+    Reseta o PIN de um usuário.
+    Apenas ADMINISTRADOR tem acesso.
+    """
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if request.method == 'POST':
+        form = ResetarPinForm(request.POST)
+
+        if form.is_valid():
+            # Resetar tentativas e bloqueio
+            usuario.tentativas_login = 0
+            usuario.bloqueado_ate = None
+
+            # Definir novo PIN
+            usuario.set_pin(form.cleaned_data['pin'])
+            usuario.save()
+
+            # Limpar rate limit cache se existir
+            if usuario.numero_login in RATE_LIMIT_CACHE:
+                del RATE_LIMIT_CACHE[usuario.numero_login]
+
+            # Auditoria
+            LogAuditoria.objects.create(
+                usuario=request.user,
+                acao='resetar_pin',
+                modelo='Usuario',
+                objeto_id=usuario.id,
+                dados_novos={
+                    'numero_login': usuario.numero_login,
+                    'nome': usuario.nome,
+                },
+                ip=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
+            )
+
+            messages.success(request, f'PIN de {usuario.nome} ({usuario.numero_login}) resetado com sucesso!')
+            return redirect('lista_usuarios')
+
+        else:
+            # Mostrar erros do formulário
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
+
+    else:
+        form = ResetarPinForm()
+
+    context = {
+        'form': form,
+        'usuario': usuario,
+    }
+
+    return render(request, 'resetar_pin_usuario.html', context)
+
+
+@login_required_custom
+@administrador_required
+@require_http_methods(["POST"])
+def toggle_ativo_usuario_view(request, usuario_id):
+    """
+    Ativa/desativa usuário (AJAX-friendly).
+    Apenas ADMINISTRADOR tem acesso.
+    """
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    # Não permite desativar o admin inicial (1000)
+    if usuario.numero_login == 1000:
+        messages.error(request, 'Não é permitido desativar o administrador principal.')
+        return redirect('lista_usuarios')
+
+    # Toggle
+    dados_anteriores = {'ativo': usuario.ativo}
+    usuario.ativo = not usuario.ativo
+    usuario.save()
+
+    # Auditoria
+    acao = 'ativar_usuario' if usuario.ativo else 'desativar_usuario'
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao=acao,
+        modelo='Usuario',
+        objeto_id=usuario.id,
+        dados_anteriores=dados_anteriores,
+        dados_novos={'ativo': usuario.ativo},
+        ip=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
+    )
+
+    status_text = 'ativado' if usuario.ativo else 'desativado'
+    messages.success(request, f'Usuário {usuario.nome} {status_text} com sucesso!')
+
+    return redirect('lista_usuarios')
+
+
+# =====================
+# FASE 8: HISTÓRICO E MÉTRICAS
+# =====================
+
+@login_required_custom
+def historico_view(request):
+    """
+    Exibe histórico de pedidos com filtros avançados.
+    Acessível por todos os usuários logados.
+    """
+    # Inicializar form com dados do GET
+    form = HistoricoFiltrosForm(request.GET or None)
+
+    # Query base: apenas pedidos ativos (não deletados)
+    pedidos = Pedido.objects.filter(deletado=False).select_related('vendedor')
+
+    # Aplicar filtros
+    if form.is_valid():
+        # Filtro de período
+        data_inicio = form.cleaned_data.get('data_inicio')
+        data_fim = form.cleaned_data.get('data_fim')
+
+        if data_inicio:
+            pedidos = pedidos.filter(data_criacao__date__gte=data_inicio)
+        if data_fim:
+            pedidos = pedidos.filter(data_criacao__date__lte=data_fim)
+
+        # Filtro de vendedor
+        vendedor_id = form.cleaned_data.get('vendedor')
+        if vendedor_id:
+            pedidos = pedidos.filter(vendedor_id=vendedor_id)
+
+        # Filtro de status
+        status = form.cleaned_data.get('status')
+        if status:
+            pedidos = pedidos.filter(status=status)
+
+    # Ordenar por data de criação (mais recentes primeiro)
+    pedidos = pedidos.order_by('-data_criacao')
+
+    # Paginação (20 pedidos por página)
+    paginator = Paginator(pedidos, 20)
+    page = request.GET.get('page', 1)
+
+    try:
+        pedidos_paginados = paginator.page(page)
+    except PageNotAnInteger:
+        pedidos_paginados = paginator.page(1)
+    except EmptyPage:
+        pedidos_paginados = paginator.page(paginator.num_pages)
+
+    # Log de auditoria
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='VISUALIZAR',
+        modelo='Historico',
+        objeto_id=0,
+        dados_novos={'filtros': request.GET.dict()},
+        ip=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
+    )
+
+    context = {
+        'form': form,
+        'pedidos': pedidos_paginados,
+        'total_pedidos': paginator.count,
+    }
+
+    return render(request, 'historico.html', context)
+
+
+@login_required_custom
+@require_http_methods(["GET", "POST"])
+def metricas_view(request):
+    """
+    Exibe métricas de performance do sistema.
+    Acessível por todos os usuários logados.
+    Botão 'Atualizar' recalcula via POST.
+    """
+    from apps.core.utils import calcular_metricas_periodo
+
+    # Definir período padrão (últimos 30 dias)
+    data_fim = timezone.localdate()
+    data_inicio = data_fim - timedelta(days=30)
+
+    # Se POST, recalcular métricas com período customizado (se fornecido)
+    if request.method == 'POST':
+        # Pode vir do formulário customizado de período
+        periodo_selecionado = request.POST.get('periodo', '30')
+
+        if periodo_selecionado == '7':
+            data_inicio = data_fim - timedelta(days=7)
+        elif periodo_selecionado == '30':
+            data_inicio = data_fim - timedelta(days=30)
+        elif periodo_selecionado == '90':
+            data_inicio = data_fim - timedelta(days=90)
+        elif periodo_selecionado == 'custom':
+            # Período customizado
+            data_inicio_str = request.POST.get('data_inicio')
+            data_fim_str = request.POST.get('data_fim')
+
+            if data_inicio_str:
+                try:
+                    data_inicio = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+                except ValueError:
+                    messages.error(request, 'Data de início inválida.')
+            if data_fim_str:
+                try:
+                    data_fim = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+                except ValueError:
+                    messages.error(request, 'Data de fim inválida.')
+
+        messages.success(request, 'Métricas atualizadas com sucesso!')
+
+    # Calcular métricas
+    metricas = calcular_metricas_periodo(data_inicio, data_fim)
+
+    # Log de auditoria
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='VISUALIZAR_METRICAS' if request.method == 'GET' else 'ATUALIZAR_METRICAS',
+        modelo='Metricas',
+        objeto_id=0,
+        dados_novos={
+            'periodo': f"{data_inicio} a {data_fim}",
+            'metodo': request.method
+        },
+        ip=get_client_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
+    )
+
+    context = {
+        'metricas': metricas,
+        'data_inicio': data_inicio,
+        'data_fim': data_fim,
+    }
+
+    return render(request, 'metricas.html', context)

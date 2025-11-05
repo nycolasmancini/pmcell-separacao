@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Resetar PIN - PMCELL{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <!-- Cabeçalho -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Resetar PIN</h1>
+        <p class="text-gray-600 mt-2">Resetando PIN de: {{ usuario.nome }} ({{ usuario.numero_login }})</p>
+    </div>
+
+    <!-- Formulário -->
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <form method="POST" action="{% url 'resetar_pin_usuario' usuario.id %}">
+            {% csrf_token %}
+
+            <!-- Informações do Usuário -->
+            <div class="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">Número de Login</p>
+                        <p class="font-semibold text-gray-900">{{ usuario.numero_login }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Nome</p>
+                        <p class="font-semibold text-gray-900">{{ usuario.nome }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Tipo</p>
+                        <p class="font-semibold text-gray-900">{{ usuario.get_tipo_display }}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Status</p>
+                        <p class="font-semibold {% if usuario.ativo %}text-green-600{% else %}text-red-600{% endif %}">
+                            {% if usuario.ativo %}Ativo{% else %}Inativo{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Novo PIN -->
+            <div class="mb-6">
+                <label for="id_pin" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.pin.label }} <span class="text-red-500">*</span>
+                </label>
+                {{ form.pin }}
+                {% if form.pin.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.pin.help_text }}</p>
+                {% endif %}
+                {% if form.pin.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.pin.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Confirmar Novo PIN -->
+            <div class="mb-6">
+                <label for="id_pin_confirmacao" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.pin_confirmacao.label }} <span class="text-red-500">*</span>
+                </label>
+                {{ form.pin_confirmacao }}
+                {% if form.pin_confirmacao.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.pin_confirmacao.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Erros gerais do formulário -->
+            {% if form.non_field_errors %}
+                <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Botões -->
+            <div class="flex items-center justify-end space-x-4 pt-6 border-t">
+                <a href="{% url 'lista_usuarios' %}" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition shadow-md">
+                    Resetar PIN
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Avisos importantes -->
+    <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <h3 class="font-semibold text-yellow-900 mb-2">⚠️ Atenção:</h3>
+        <ul class="text-sm text-yellow-800 space-y-1">
+            <li>• Ao resetar o PIN, as seguintes ações serão executadas automaticamente:</li>
+            <li class="ml-4">- Tentativas de login serão zeradas</li>
+            <li class="ml-4">- Bloqueio temporário será removido (se existir)</li>
+            <li class="ml-4">- Cache de rate limiting será limpo</li>
+            <li>• O usuário poderá fazer login imediatamente com o novo PIN</li>
+            <li>• Certifique-se de anotar o novo PIN e informá-lo ao usuário de forma segura</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -33,6 +33,13 @@ from apps.core.views import (
     painel_compras_view,
     confirmar_compra_view,
     historico_compras_view,
+    lista_usuarios_view,
+    criar_usuario_view,
+    editar_usuario_view,
+    resetar_pin_usuario_view,
+    toggle_ativo_usuario_view,
+    historico_view,
+    metricas_view,
 )
 
 urlpatterns = [
@@ -63,8 +70,19 @@ urlpatterns = [
     path('painel-compras/confirmar/<str:produto_codigo>/', confirmar_compra_view, name='confirmar_compra'),
     path('painel-compras/historico/', historico_compras_view, name='historico_compras'),
 
-    # Admin - Reset PIN
+    # Admin - Reset PIN (legado, manter para compatibilidade)
     path('admin/reset-pin/<int:user_id>/', reset_pin_view, name='reset_pin'),
+
+    # Gestão de Usuários (FASE 7)
+    path('usuarios/', lista_usuarios_view, name='lista_usuarios'),
+    path('usuarios/criar/', criar_usuario_view, name='criar_usuario'),
+    path('usuarios/<int:usuario_id>/editar/', editar_usuario_view, name='editar_usuario'),
+    path('usuarios/<int:usuario_id>/resetar-pin/', resetar_pin_usuario_view, name='resetar_pin_usuario'),
+    path('usuarios/<int:usuario_id>/toggle-ativo/', toggle_ativo_usuario_view, name='toggle_ativo_usuario'),
+
+    # Histórico e Métricas (FASE 8)
+    path('historico/', historico_view, name='historico'),
+    path('metricas/', metricas_view, name='metricas'),
 
     # Django Admin
     path('admin/', admin.site.urls),

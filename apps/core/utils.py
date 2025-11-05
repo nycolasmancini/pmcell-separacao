@@ -148,3 +148,111 @@ def formatar_tempo(tempo_delta):
         return f"{horas}h {minutos}min"
     else:
         return f"{minutos}min"
+
+
+def calcular_metricas_periodo(data_inicio=None, data_fim=None):
+    """
+    Calcula métricas de pedidos para um período específico.
+
+    Args:
+        data_inicio: date - Data inicial do período (opcional, padrão: 30 dias atrás)
+        data_fim: date - Data final do período (opcional, padrão: hoje)
+
+    Returns:
+        dict - {
+            'total_pedidos': int,
+            'pedidos_finalizados': int,
+            'pedidos_cancelados': int,
+            'taxa_conclusao': float (0-100),
+            'tempo_medio_separacao': timedelta ou None,
+            'tempo_medio_formatado': str,
+            'itens_em_compra_total': int,
+            'itens_em_compra_percentual': float (0-100),
+            'pedidos_por_status': dict
+        }
+    """
+    from apps.core.models import Pedido, ItemPedido
+
+    # Definir período padrão (últimos 30 dias)
+    if not data_fim:
+        data_fim = timezone.localdate()
+    if not data_inicio:
+        data_inicio = data_fim - timedelta(days=30)
+
+    # Query base: pedidos não deletados no período
+    pedidos = Pedido.objects.filter(
+        data_criacao__date__gte=data_inicio,
+        data_criacao__date__lte=data_fim,
+        deletado=False
+    )
+
+    # Total de pedidos
+    total_pedidos = pedidos.count()
+
+    # Pedidos por status
+    pedidos_finalizados = pedidos.filter(status='FINALIZADO').count()
+    pedidos_cancelados = pedidos.filter(status='CANCELADO').count()
+
+    # Taxa de conclusão (considerando apenas finalizados vs total - cancelados)
+    pedidos_validos = total_pedidos - pedidos_cancelados
+    taxa_conclusao = (pedidos_finalizados / pedidos_validos * 100) if pedidos_validos > 0 else 0
+
+    # Tempo médio de separação (apenas pedidos finalizados)
+    tempo_medio = None
+    finalizados_com_tempo = pedidos.filter(
+        status='FINALIZADO',
+        data_finalizacao__isnull=False
+    )
+
+    if finalizados_com_tempo.exists():
+        tempos = []
+        for pedido in finalizados_com_tempo:
+            if pedido.data_criacao and pedido.data_finalizacao:
+                tempo = calcular_tempo_util(pedido.data_criacao, pedido.data_finalizacao)
+                tempos.append(tempo.total_seconds())
+
+        if tempos:
+            media_segundos = sum(tempos) / len(tempos)
+            tempo_medio = timedelta(seconds=media_segundos)
+
+    # Itens em compra (considerando todos os pedidos ativos, não apenas do período)
+    itens_em_compra = ItemPedido.objects.filter(
+        em_compra=True,
+        compra_realizada=False,
+        pedido__deletado=False
+    )
+    itens_em_compra_total = itens_em_compra.count()
+
+    # Total de itens de pedidos ativos (não finalizados, não cancelados, não deletados)
+    total_itens_ativos = ItemPedido.objects.filter(
+        pedido__deletado=False
+    ).exclude(
+        pedido__status__in=['FINALIZADO', 'CANCELADO']
+    ).count()
+
+    itens_em_compra_percentual = (itens_em_compra_total / total_itens_ativos * 100) if total_itens_ativos > 0 else 0
+
+    # Pedidos por status (detalhado)
+    pedidos_por_status = {
+        'PENDENTE': pedidos.filter(status='PENDENTE').count(),
+        'EM_SEPARACAO': pedidos.filter(status='EM_SEPARACAO').count(),
+        'AGUARDANDO_COMPRA': pedidos.filter(status='AGUARDANDO_COMPRA').count(),
+        'FINALIZADO': pedidos_finalizados,
+        'CANCELADO': pedidos_cancelados,
+    }
+
+    return {
+        'total_pedidos': total_pedidos,
+        'pedidos_finalizados': pedidos_finalizados,
+        'pedidos_cancelados': pedidos_cancelados,
+        'taxa_conclusao': round(taxa_conclusao, 1),
+        'tempo_medio_separacao': tempo_medio,
+        'tempo_medio_formatado': formatar_tempo(tempo_medio),
+        'itens_em_compra_total': itens_em_compra_total,
+        'itens_em_compra_percentual': round(itens_em_compra_percentual, 1),
+        'pedidos_por_status': pedidos_por_status,
+        'periodo': {
+            'data_inicio': data_inicio,
+            'data_fim': data_fim
+        }
+    }

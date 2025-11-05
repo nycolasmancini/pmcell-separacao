@@ -14,8 +14,8 @@
 ## 📊 STATUS GERAL DO PROJETO
 - **Início**: 04/11/2024
 - **Status Atual**: EM DESENVOLVIMENTO
-- **Fase Atual**: FASE 6 - ✅ COMPLETA | Próxima: FASE 7
-- **Progresso Total**: 70%
+- **Fase Atual**: FASE 8 - ✅ COMPLETA | Próxima: FASE 9
+- **Progresso Total**: 85%
 - **GitHub**: https://github.com/nycolasmancini/pmcell-separacao
 - **URL Produção**: https://web-production-312d.up.railway.app
 
@@ -356,49 +356,103 @@ pmcell/
 
 ---
 
-### **FASE 7: Gestão de Usuários** (1 dia)
-**Status**: ⏰ Pendente
+### **FASE 7: Gestão de Usuários** ✅ COMPLETA
+**Status**: ✅ COMPLETA - 05/11/2024
 
 **Tarefas**:
-- [ ] CRUD de usuários (admin only)
-- [ ] Formulário criar usuário
-- [ ] Gerar número login automático (4 dígitos)
-- [ ] Definir PIN inicial
-- [ ] Editar usuário
-- [ ] Ativar/desativar usuário
-- [ ] Resetar PIN
-- [ ] Lista de usuários com último acesso
-- [ ] Validações e permissões
+- [x] CRUD de usuários (admin only)
+- [x] Formulário criar usuário (admin insere numero_login e PIN manualmente)
+- [x] Editar usuário (nome, tipo, ativo)
+- [x] Ativar/desativar usuário (toggle)
+- [x] Resetar PIN (apenas admin)
+- [x] Lista de usuários com último acesso
+- [x] Validações e permissões
+- [x] Testes completos (15 testes passando)
+
+**Forms criados**:
+- [x] CriarUsuarioForm (numero_login, nome, tipo, PIN + confirmação)
+- [x] EditarUsuarioForm (nome, tipo, ativo)
+- [x] ResetarPinForm (novo PIN + confirmação)
 
 **Views criadas**:
-- [ ] ListaUsuariosView
-- [ ] CriarUsuarioView
-- [ ] EditarUsuarioView
-- [ ] ResetarPinView
+- [x] lista_usuarios_view (lista todos usuários)
+- [x] criar_usuario_view (criar novo usuário)
+- [x] editar_usuario_view (editar usuário existente)
+- [x] resetar_pin_usuario_view (resetar PIN de usuário)
+- [x] toggle_ativo_usuario_view (ativar/desativar via POST)
+
+**Templates criados**:
+- [x] lista_usuarios.html (tabela com todos usuários)
+- [x] criar_usuario.html (formulário de criação)
+- [x] editar_usuario.html (formulário de edição)
+- [x] resetar_pin_usuario.html (formulário de reset)
+
+**Decisões de implementação**:
+- Admin insere numero_login manualmente (validação de duplicata)
+- Admin define PIN inicial do usuário
+- Apenas admin pode resetar PINs (usuários não podem alterar)
+- Desativar usuário: bloqueia login + oculta das listas de filtros
+- Dashboard já filtra apenas usuários ativos
+- Login já valida se usuário está ativo
+- Não pode desativar admin principal (1000)
+- Resetar PIN também limpa tentativas e rate limit
+
+**Entregas**:
+- ✅ Sistema completo de CRUD de usuários funcionando
+- ✅ Todas permissões implementadas (@administrador_required)
+- ✅ Validações frontend e backend
+- ✅ Navbar atualizado com link "Gerenciar Usuários" (admin only)
+- ✅ Auditoria completa de todas ações
+- ✅ Testes completos: 15 testes passando (test_user_management.py)
+- ✅ Interface moderna e responsiva com Tailwind CSS
 
 ---
 
-### **FASE 8: Histórico e Métricas** (2 dias)
-**Status**: ⏰ Pendente
+### **FASE 8: Histórico e Métricas** ✅ COMPLETA
+**Status**: ✅ COMPLETA - 05/11/2024
 
 **Tarefas**:
-- [ ] Tela de histórico
-- [ ] Filtros: período, vendedor, status
-- [ ] Paginação de resultados
-- [ ] Tela de métricas básicas
-- [ ] Cálculo tempo médio (considera horário comercial)
-- [ ] Taxa de conclusão
-- [ ] Pedidos por período
-- [ ] Botão atualizar métricas
-- [ ] Indicador de cálculo em andamento
+- [x] Tela de histórico
+- [x] Filtros: período, vendedor, status
+- [x] Paginação de resultados (20 por página)
+- [x] Tela de métricas básicas
+- [x] Cálculo tempo médio (considera horário comercial)
+- [x] Taxa de conclusão
+- [x] Pedidos por período
+- [x] Botão atualizar métricas
+- [x] Itens em compra (% e quantidade)
 
 **Views criadas**:
-- [ ] HistoricoView
-- [ ] MetricasView
+- [x] historico_view (GET - filtros + paginação)
+- [x] metricas_view (GET/POST - atualização manual)
+
+**Forms criados**:
+- [x] HistoricoFiltrosForm (data_inicio, data_fim, vendedor, status)
 
 **Funções**:
-- [ ] calcular_tempo_util()
-- [ ] gerar_metricas()
+- [x] calcular_metricas_periodo() (reutiliza calcular_tempo_util existente)
+
+**Templates criados**:
+- [x] historico.html (filtros + tabela + paginação)
+- [x] metricas.html (cards + seletor de período + botão atualizar)
+
+**Decisões de implementação**:
+1. Histórico: apenas pedidos ativos (deletado=False)
+2. Filtro vendedor: dropdown com todos vendedores ativos + opção "Todos"
+3. Paginação: 20 pedidos por página
+4. Métricas essenciais: tempo médio + itens para compra (% e quantidade)
+5. Atualização: botão manual (sem WebSocket para economizar recursos)
+6. Período padrão: últimos 30 dias (customizável: 7, 30, 90 dias ou período custom)
+7. Navbar atualizado: links "Histórico" e "Métricas" acessíveis por todos usuários
+
+**Entregas**:
+- ✅ Sistema completo de histórico com filtros avançados
+- ✅ Tela de métricas com indicadores principais
+- ✅ Função calcular_metricas_periodo() completa
+- ✅ Navbar atualizado com novos links
+- ✅ Testes completos: 16 testes passando (test_historico_metricas.py)
+- ✅ Interface moderna e responsiva com Tailwind CSS
+- ✅ Auditoria completa de todas ações
 
 ---
 
@@ -520,15 +574,15 @@ pmcell/
 
 ## 📈 MÉTRICAS DE PROGRESSO
 
-- **Fases Completas**: 7/10 (FASE 0-6 ✅)
-- **Views Implementadas**: 17/30+ (separação + compras ✅)
+- **Fases Completas**: 9/10 (FASE 0-8 ✅)
+- **Views Implementadas**: 24/30+ (separação + compras + usuários + histórico/métricas ✅)
 - **Modelos Criados**: 5/5 (Usuario, Pedido, ItemPedido, Produto, LogAuditoria ✅)
-- **Templates Criados**: 9 (base, login, dashboard, reset_pin, upload_pdf, confirmar_pedido, pedido_detalhe, painel_compras, historico_compras ✅)
-- **Forms Criados**: 4/6+ (UploadPDFForm, ConfirmarPedidoForm, SubstituirProdutoForm, MarcarCompraForm ✅)
-- **Testes Escritos**: 2 (test_login.py ✅, test_bloqueio.py ✅)
+- **Templates Criados**: 15 (base, login, dashboard, reset_pin, upload_pdf, confirmar_pedido, pedido_detalhe, painel_compras, historico_compras, lista_usuarios, criar_usuario, editar_usuario, resetar_pin_usuario, historico, metricas ✅)
+- **Forms Criados**: 8/9+ (UploadPDFForm, ConfirmarPedidoForm, SubstituirProdutoForm, MarcarCompraForm, CriarUsuarioForm, EditarUsuarioForm, ResetarPinForm, HistoricoFiltrosForm ✅)
+- **Testes Escritos**: 4 (test_login.py ✅, test_bloqueio.py ✅, test_user_management.py ✅ - 15 testes, test_historico_metricas.py ✅ - 16 testes)
 - **WebSocket**: 3 Consumers ✅ (DashboardConsumer, PedidoDetalheConsumer, PainelComprasConsumer)
 - **JavaScript**: 3 arquivos ✅ (dashboard.js, pedido_detalhe.js, painel_compras.js)
-- **Utils**: apps/core/utils.py ✅ (cálculo de tempo útil e métricas)
+- **Utils**: apps/core/utils.py ✅ (calcular_tempo_util, calcular_metricas_dia, calcular_metricas_periodo, formatar_tempo)
 - **Deploy Railway**: ✅ FUNCIONANDO - https://web-production-312d.up.railway.app
 
 ## 🐛 BUGS E PROBLEMAS CONHECIDOS
@@ -828,4 +882,110 @@ pmcell/
 
 ---
 
-**Próxima ação**: Iniciar FASE 7 - Gestão de Usuários
+### 05/11/2024 - FASE 7 Completa (23:30)
+- ✅ Sistema completo de gestão de usuários implementado
+- ✅ 3 forms criados (CriarUsuarioForm, EditarUsuarioForm, ResetarPinForm)
+- ✅ 5 views implementadas (lista, criar, editar, resetar_pin, toggle_ativo)
+- ✅ 4 templates criados (lista_usuarios, criar_usuario, editar_usuario, resetar_pin_usuario)
+- ✅ URLs adicionadas para todas as rotas de usuários
+- ✅ Navbar atualizado com link "Gerenciar Usuários" (admin only)
+- ✅ Testes completos: 15 testes passando (test_user_management.py)
+
+**Arquivos criados**:
+- templates/lista_usuarios.html: Lista de todos usuários com status e ações
+- templates/criar_usuario.html: Formulário de criação com validações
+- templates/editar_usuario.html: Formulário de edição (nome, tipo, ativo)
+- templates/resetar_pin_usuario.html: Formulário de reset de PIN
+- tests/test_user_management.py: 15 testes completos (forms + views)
+
+**Arquivos atualizados**:
+- apps/core/forms.py: 3 forms adicionados (CriarUsuarioForm, EditarUsuarioForm, ResetarPinForm)
+- apps/core/views.py: 5 views adicionadas (lista, criar, editar, resetar_pin, toggle_ativo)
+- pmcell_settings/urls.py: 5 URLs adicionadas para gestão de usuários
+- templates/base.html: Link "Gerenciar Usuários" adicionado ao navbar (admin only)
+
+**Funcionalidades implementadas**:
+1. Lista de usuários mostrando: numero_login, nome, tipo, status, último acesso, ações
+2. Criar usuário: admin insere numero_login e PIN manualmente (com validação de duplicata)
+3. Editar usuário: nome, tipo, ativo (não permite editar numero_login)
+4. Resetar PIN: admin define novo PIN (limpa tentativas e bloqueio)
+5. Toggle ativar/desativar: POST request (não permite desativar admin 1000)
+6. Validações: numero_login único, PIN numérico 4 dígitos, PIN confirmação
+7. Usuários inativos: bloqueados no login + ocultos das listas de filtros
+8. Auditoria completa de todas ações de gestão
+9. Testes completos validando todas funcionalidades
+
+**Decisões de implementação**:
+1. Admin insere numero_login manualmente (não automático)
+2. Admin define PIN inicial (não gerado automaticamente)
+3. Apenas admin pode resetar PINs (usuários não podem alterar)
+4. Desativar usuário: bloqueia login + oculta das listas
+5. Dashboard já filtra apenas usuários ativos (ativo=True)
+6. Login já valida se usuário está ativo antes de permitir acesso
+7. Não permite desativar ou editar admin principal (numero_login=1000)
+8. Resetar PIN também limpa tentativas_login, bloqueado_ate e rate limit
+
+**Conquistas da FASE 7**:
+1. Sistema completo de CRUD de usuários funcionando
+2. Todas permissões implementadas (@administrador_required)
+3. Validações robustas frontend e backend
+4. Interface moderna e responsiva
+5. Auditoria completa de todas ações
+6. Testes completos: 15 testes passando
+7. Integração perfeita com sistema existente
+
+---
+
+### 05/11/2024 - FASE 8 Completa (23:30)
+- ✅ Sistema completo de histórico e métricas implementado
+- ✅ 2 views criadas (historico_view, metricas_view)
+- ✅ 1 form criado (HistoricoFiltrosForm)
+- ✅ 2 templates criados (historico.html, metricas.html)
+- ✅ 2 URLs adicionadas (historico/, metricas/)
+- ✅ Navbar atualizado com novos links acessíveis por todos
+
+**Arquivos criados**:
+- templates/historico.html: Histórico completo com filtros avançados
+- templates/metricas.html: Dashboard de métricas com seletor de período
+- tests/test_historico_metricas.py: 16 testes completos (forms + views + utils)
+
+**Arquivos atualizados**:
+- apps/core/forms.py: HistoricoFiltrosForm adicionado
+- apps/core/views.py: 2 views adicionadas (historico_view, metricas_view)
+- apps/core/utils.py: calcular_metricas_periodo() adicionado
+- pmcell_settings/urls.py: 2 URLs adicionadas para histórico e métricas
+- templates/base.html: Links "Histórico" e "Métricas" adicionados ao navbar
+
+**Funcionalidades implementadas**:
+1. Histórico com filtros: período (data_inicio/fim), vendedor (dropdown + "Todos"), status
+2. Paginação: 20 pedidos por página com navegação Anterior/Próxima
+3. Apenas pedidos ativos (deletado=False) são exibidos
+4. Métricas: total pedidos, finalizados, taxa conclusão, tempo médio separação
+5. Itens em compra: quantidade total + percentual
+6. Pedidos por status: distribuição detalhada
+7. Seletor de período: 7, 30, 90 dias ou customizado
+8. Botão "Atualizar Métricas" (POST - recalcula sem WebSocket)
+9. Interface responsiva com Tailwind CSS
+10. Auditoria completa de visualizações
+
+**Decisões de implementação**:
+1. Histórico: filtro vendedor com dropdown (todos vendedores ativos + "Todos")
+2. Apenas pedidos ativos no histórico (deletado=False)
+3. Paginação: 20 por página (adequado para o volume do negócio)
+4. Métricas: período padrão 30 dias (customizável: 7, 30, 90 ou custom)
+5. Atualização manual via botão POST (sem WebSocket para economizar recursos)
+6. Acesso universal: histórico e métricas para todos usuários logados
+7. Cálculo de tempo útil considera horário comercial (7:30-17h, seg-sex)
+
+**Conquistas da FASE 8**:
+1. Sistema completo de histórico com filtros avançados e paginação
+2. Dashboard de métricas com indicadores essenciais
+3. Função calcular_metricas_periodo() reutilizável
+4. Navbar atualizado e acessível
+5. Testes completos: 16 testes passando (100% de sucesso)
+6. Interface moderna e consistente com o resto do sistema
+7. Zero bugs detectados nos testes
+
+---
+
+**Próxima ação**: Iniciar FASE 9 - Ajustes e Polimento

@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Criar Usuário - PMCELL{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8 max-w-2xl">
+    <!-- Cabeçalho -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Criar Novo Usuário</h1>
+        <p class="text-gray-600 mt-2">Preencha os dados do novo usuário</p>
+    </div>
+
+    <!-- Formulário -->
+    <div class="bg-white rounded-lg shadow-md p-8">
+        <form method="POST" action="{% url 'criar_usuario' %}">
+            {% csrf_token %}
+
+            <!-- Número de Login -->
+            <div class="mb-6">
+                <label for="id_numero_login" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.numero_login.label }} <span class="text-red-500">*</span>
+                </label>
+                {{ form.numero_login }}
+                {% if form.numero_login.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.numero_login.help_text }}</p>
+                {% endif %}
+                {% if form.numero_login.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.numero_login.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Nome -->
+            <div class="mb-6">
+                <label for="id_nome" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.nome.label }} <span class="text-red-500">*</span>
+                </label>
+                {{ form.nome }}
+                {% if form.nome.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.nome.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Tipo -->
+            <div class="mb-6">
+                <label for="id_tipo" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.tipo.label }} <span class="text-red-500">*</span>
+                </label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.tipo.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- PIN -->
+            <div class="mb-6">
+                <label for="id_pin" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.pin.label }} <span class="text-red-500">*</span>
+                </label>
+                {{ form.pin }}
+                {% if form.pin.help_text %}
+                    <p class="mt-1 text-sm text-gray-500">{{ form.pin.help_text }}</p>
+                {% endif %}
+                {% if form.pin.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.pin.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Confirmar PIN -->
+            <div class="mb-6">
+                <label for="id_pin_confirmacao" class="block text-sm font-medium text-gray-700 mb-2">
+                    {{ form.pin_confirmacao.label }} <span class="text-red-500">*</span>
+                </label>
+                {{ form.pin_confirmacao }}
+                {% if form.pin_confirmacao.errors %}
+                    <div class="mt-2 text-sm text-red-600">
+                        {% for error in form.pin_confirmacao.errors %}
+                            <p>{{ error }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Erros gerais do formulário -->
+            {% if form.non_field_errors %}
+                <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    {% for error in form.non_field_errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Botões -->
+            <div class="flex items-center justify-end space-x-4 pt-6 border-t">
+                <a href="{% url 'lista_usuarios' %}" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition shadow-md">
+                    Criar Usuário
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Informações adicionais -->
+    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="font-semibold text-blue-900 mb-2">Informações Importantes:</h3>
+        <ul class="text-sm text-blue-800 space-y-1">
+            <li>• O número de login deve ser único e ter 4 dígitos (1000-9999)</li>
+            <li>• O PIN deve ser numérico com exatamente 4 dígitos</li>
+            <li>• O usuário poderá fazer login usando o número de login e o PIN definidos aqui</li>
+            <li>• Apenas você (administrador) pode resetar o PIN do usuário</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

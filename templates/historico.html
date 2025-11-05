@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Histórico de Pedidos - PMCELL{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Cabeçalho -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800">Histórico de Pedidos</h1>
+        <p class="text-gray-600 mt-2">Visualize e filtre o histórico completo de pedidos</p>
+    </div>
+
+    <!-- Formulário de Filtros -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <form method="get" action="{% url 'historico' %}">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Data Início -->
+                <div>
+                    <label for="{{ form.data_inicio.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.data_inicio.label }}
+                    </label>
+                    {{ form.data_inicio }}
+                    {% if form.data_inicio.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.data_inicio.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Data Fim -->
+                <div>
+                    <label for="{{ form.data_fim.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.data_fim.label }}
+                    </label>
+                    {{ form.data_fim }}
+                    {% if form.data_fim.help_text %}
+                        <p class="text-xs text-gray-500 mt-1">{{ form.data_fim.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Vendedor -->
+                <div>
+                    <label for="{{ form.vendedor.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.vendedor.label }}
+                    </label>
+                    {{ form.vendedor }}
+                </div>
+
+                <!-- Status -->
+                <div>
+                    <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.status.label }}
+                    </label>
+                    {{ form.status }}
+                </div>
+            </div>
+
+            <!-- Erros do formulário -->
+            {% if form.non_field_errors %}
+                <div class="mt-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- Botões -->
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition">
+                    Filtrar
+                </button>
+                <a href="{% url 'historico' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold transition">
+                    Limpar Filtros
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Informações de Resultados -->
+    <div class="mb-4 text-sm text-gray-600">
+        <p>Mostrando <span class="font-semibold">{{ pedidos|length }}</span> de <span class="font-semibold">{{ total_pedidos }}</span> pedidos</p>
+    </div>
+
+    <!-- Tabela de Pedidos -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        {% if pedidos %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Nº Orçamento
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Cliente
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Vendedor
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Data Criação
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Ações
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for pedido in pedidos %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ pedido.numero_orcamento }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">{{ pedido.nome_cliente }}</div>
+                                <div class="text-xs text-gray-500">{{ pedido.codigo_cliente }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ pedido.vendedor.nome }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900">{{ pedido.data_criacao|date:"d/m/Y" }}</div>
+                                <div class="text-xs text-gray-500">{{ pedido.data_criacao|date:"H:i" }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                    {% if pedido.status == 'PENDENTE' %}bg-yellow-100 text-yellow-800
+                                    {% elif pedido.status == 'EM_SEPARACAO' %}bg-blue-100 text-blue-800
+                                    {% elif pedido.status == 'AGUARDANDO_COMPRA' %}bg-orange-100 text-orange-800
+                                    {% elif pedido.status == 'FINALIZADO' %}bg-green-100 text-green-800
+                                    {% elif pedido.status == 'CANCELADO' %}bg-red-100 text-red-800
+                                    {% endif %}">
+                                    {{ pedido.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="{% url 'pedido_detalhe' pedido.id %}"
+                                   class="text-blue-600 hover:text-blue-900 transition">
+                                    Ver Detalhes
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            {% if pedidos.has_other_pages %}
+                <div class="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                    <div class="text-sm text-gray-700">
+                        Página {{ pedidos.number }} de {{ pedidos.paginator.num_pages }}
+                    </div>
+                    <div class="flex gap-2">
+                        {% if pedidos.has_previous %}
+                            <a href="?page={{ pedidos.previous_page_number }}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.vendedor %}&vendedor={{ request.GET.vendedor }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+                               class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                                Anterior
+                            </a>
+                        {% endif %}
+                        {% if pedidos.has_next %}
+                            <a href="?page={{ pedidos.next_page_number }}{% if request.GET.data_inicio %}&data_inicio={{ request.GET.data_inicio }}{% endif %}{% if request.GET.data_fim %}&data_fim={{ request.GET.data_fim }}{% endif %}{% if request.GET.vendedor %}&vendedor={{ request.GET.vendedor }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}"
+                               class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                                Próxima
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="px-6 py-12 text-center">
+                <p class="text-gray-500 text-lg">Nenhum pedido encontrado com os filtros selecionados.</p>
+                <a href="{% url 'historico' %}" class="text-blue-600 hover:text-blue-800 mt-2 inline-block">
+                    Limpar filtros
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -378,6 +378,8 @@ function pedidoDetalheApp(pedidoId) {
                 }
 
                 try {
+                    console.log(`[CHECKBOX] Enviando requisição para separar item ${itemId}...`);
+
                     const response = await fetch(`/pedidos/item/${itemId}/separar/`, {
                         method: 'POST',
                         headers: {
@@ -386,10 +388,22 @@ function pedidoDetalheApp(pedidoId) {
                         }
                     });
 
+                    console.log(`[CHECKBOX] Response status: ${response.status} ${response.statusText}`);
+
+                    // Check if response is OK before parsing JSON
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(`[CHECKBOX] Erro HTTP ${response.status}:`, errorText);
+                        alert(`Erro ao separar item (HTTP ${response.status}). Verifique o console para detalhes.`);
+                        this.revertVisualFeedback(itemId);
+                        return;
+                    }
+
                     const data = await response.json();
+                    console.log('[CHECKBOX] Response data:', data);
 
                     if (data.success) {
-                        console.log('Item separado com sucesso via checkbox:', data);
+                        console.log('✓ [CHECKBOX] Item separado com sucesso:', data);
 
                         // Add to separated items array
                         if (!this.itemsSeparados.includes(itemId)) {
@@ -401,13 +415,14 @@ function pedidoDetalheApp(pedidoId) {
 
                         // WebSocket will also handle updates
                     } else {
+                        console.error('✗ [CHECKBOX] Servidor retornou erro:', data.error);
                         alert('Erro: ' + (data.error || 'Erro ao separar item'));
                         // Revert checkbox and visual feedback
                         this.revertVisualFeedback(itemId);
                     }
                 } catch (error) {
-                    console.error('Erro ao separar item via checkbox:', error);
-                    alert('Erro ao separar item. Tente novamente.');
+                    console.error('✗ [CHECKBOX] Exceção ao separar item:', error);
+                    alert(`Erro ao separar item: ${error.message}\nVerifique o console para mais detalhes.`);
                     // Revert checkbox and visual feedback
                     this.revertVisualFeedback(itemId);
                 }

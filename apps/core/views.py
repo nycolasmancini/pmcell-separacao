@@ -5,8 +5,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import transaction
 from datetime import timedelta, datetime, date
 import copy
+import logging
 from .models import Usuario, LogAuditoria, Pedido, ItemPedido, Produto
 from .forms import (
     CriarUsuarioForm,
@@ -695,38 +697,57 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from django.http import JsonResponse
 
+# Logger para debugging
+logger = logging.getLogger(__name__)
+
 
 @login_required_custom
 @require_http_methods(["POST"])
+@transaction.atomic()  # Garantir transação atômica
 def separar_item_view(request, item_id):
     """
     View para marcar um item como separado (tudo-ou-nada).
     Disponível para qualquer usuário autenticado.
     """
-    item = get_object_or_404(ItemPedido, id=item_id)
-    pedido = item.pedido
+    logger.info(f"[SEPARAR ITEM] Requisição recebida - Item ID: {item_id}, User: {request.user.nome}")
 
-    # Verificar se pedido não está deletado
-    if pedido.deletado:
-        return JsonResponse({'success': False, 'error': 'Pedido foi deletado.'}, status=400)
+    try:
+        item = get_object_or_404(ItemPedido, id=item_id)
+        pedido = item.pedido
 
-    # Verificar se já está separado
-    if item.separado:
-        return JsonResponse({'success': False, 'error': 'Item já está separado.'}, status=400)
+        logger.info(f"[SEPARAR ITEM] Item encontrado - Produto: {item.produto.descricao[:50]}, Pedido: {pedido.numero_orcamento}")
 
-    # Verificar se está substituído
-    if item.substituido:
-        return JsonResponse({'success': False, 'error': 'Item foi substituído.'}, status=400)
+        # Verificar se pedido não está deletado
+        if pedido.deletado:
+            logger.warning(f"[SEPARAR ITEM] Pedido deletado - Item ID: {item_id}")
+            return JsonResponse({'success': False, 'error': 'Pedido foi deletado.'}, status=400)
 
-    # Verificar se item estava marcado para compra
-    estava_em_compra = item.em_compra
+        # Verificar se já está separado
+        if item.separado:
+            logger.warning(f"[SEPARAR ITEM] Item já separado - Item ID: {item_id}")
+            return JsonResponse({'success': False, 'error': 'Item já está separado.'}, status=400)
 
-    # Marcar como separado (e remover de compra se estava)
-    item.separado = True
-    item.em_compra = False  # Remove da lista de compras
-    item.separado_por = request.user
-    item.separado_em = timezone.now()
-    item.save()
+        # Verificar se está substituído
+        if item.substituido:
+            logger.warning(f"[SEPARAR ITEM] Item substituído - Item ID: {item_id}")
+            return JsonResponse({'success': False, 'error': 'Item foi substituído.'}, status=400)
+
+        # Verificar se item estava marcado para compra
+        estava_em_compra = item.em_compra
+
+        # Marcar como separado (e remover de compra se estava)
+        item.separado = True
+        item.em_compra = False  # Remove da lista de compras
+        item.separado_por = request.user
+        item.separado_em = timezone.now()
+
+        logger.info(f"[SEPARAR ITEM] Salvando item - ID: {item.id}, separado=True, user={request.user.nome}")
+        item.save(update_fields=['separado', 'em_compra', 'separado_por', 'separado_em'])
+        logger.info(f"[SEPARAR ITEM] ✓ Item salvo com sucesso - ID: {item.id}")
+
+    except Exception as e:
+        logger.error(f"[SEPARAR ITEM] ✗ ERRO ao salvar item {item_id}: {str(e)}", exc_info=True)
+        return JsonResponse({'success': False, 'error': f'Erro ao processar: {str(e)}'}, status=500)
 
     # Atualizar status do pedido se necessário
     if pedido.status == 'PENDENTE':
@@ -796,6 +817,7 @@ def separar_item_view(request, item_id):
             }
         )
 
+    logger.info(f"[SEPARAR ITEM] ✓ PROCESSO COMPLETO - Item {item.id} separado com sucesso")
     return JsonResponse({
         'success': True,
         'item_id': item.id,

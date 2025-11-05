@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from datetime import timedelta, datetime
+import copy
 from .models import Usuario, LogAuditoria, Pedido, ItemPedido, Produto
 from .forms import (
     CriarUsuarioForm,
@@ -557,9 +558,12 @@ def confirmar_pedido_view(request):
         messages.error(request, 'Nenhum PDF foi processado. Por favor, faça o upload primeiro.')
         return redirect('upload_pdf')
 
-    # Converter valores de string para Decimal para uso no template
-    # (necessário porque session armazena como string para JSON serialization)
-    for produto in dados_pdf['produtos']:
+    # Criar cópia profunda para uso no template (não modifica sessão)
+    # Session data permanece como strings (JSON serializável)
+    dados_pdf_template = copy.deepcopy(dados_pdf)
+
+    # Converter valores de string para Decimal APENAS na cópia para template
+    for produto in dados_pdf_template['produtos']:
         produto['quantidade'] = Decimal(produto['quantidade'])
         produto['preco_unitario'] = Decimal(produto['preco_unitario'])
 
@@ -662,14 +666,14 @@ def confirmar_pedido_view(request):
                 messages.error(request, f'Erro ao criar pedido: {str(e)}')
                 return render(request, 'confirmar_pedido.html', {
                     'form': form,
-                    'dados_pdf': dados_pdf
+                    'dados_pdf': dados_pdf_template
                 })
     else:
         form = ConfirmarPedidoForm()
 
     return render(request, 'confirmar_pedido.html', {
         'form': form,
-        'dados_pdf': dados_pdf
+        'dados_pdf': dados_pdf_template
     })
 
 

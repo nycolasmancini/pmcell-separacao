@@ -6,7 +6,7 @@ Sistema interno para gestão de separação de pedidos com processamento automá
 
 - Django 4.2.7
 - Python 3.11
-- SQLite (desenvolvimento e produção inicial)
+- PostgreSQL (produção) / SQLite (desenvolvimento)
 - Django Channels (WebSocket - próximas fases)
 - Railway (deploy)
 
@@ -63,8 +63,20 @@ Acesse: http://localhost:8000
 
 O projeto está configurado para deploy automático no Railway. Qualquer push para a branch `main` dispara um novo deploy.
 
+### Configuração PostgreSQL
+
+⚠️ **IMPORTANTE**: Configure o PostgreSQL no Railway para persistir dados entre deploys.
+
+**Guia completo**: Veja [`RAILWAY_POSTGRES_SETUP.md`](RAILWAY_POSTGRES_SETUP.md)
+
+**Passos rápidos**:
+1. Adicione banco PostgreSQL no Railway Dashboard
+2. Configure variável `DATABASE_URL` no serviço web
+3. Redeploy (migrations serão executadas automaticamente)
+
 ### Variáveis de Ambiente (Railway)
 
+- `DATABASE_URL`: URL de conexão do PostgreSQL (obrigatório)
 - `SECRET_KEY`: Chave secreta do Django (gerada automaticamente)
 - `DEBUG`: False (produção)
 - `ALLOWED_HOSTS`: Configurado automaticamente

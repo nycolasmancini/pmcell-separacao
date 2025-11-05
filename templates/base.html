@@ -90,7 +90,7 @@
         <article class="border border-solid border-gray-700 w-full ease-in-out duration-500 left-0 rounded-2xl inline-block shadow-lg shadow-black/15 bg-white">
 
             <!-- Dashboard -->
-            <label for="dashboard" class="{% if request.resolver_match.url_name == 'dashboard' %}shadow-lg shadow-blue-400/50{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
+            <label for="dashboard" class="{% if request.resolver_match.url_name == 'dashboard' %}shadow-lg shadow-blue-400/35 hover:shadow-xl hover:shadow-blue-400/50 transition-shadow duration-500{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
                 <input class="hidden peer/expand" type="radio" name="path" id="dashboard" {% if request.resolver_match.url_name == 'dashboard' %}checked{% endif %}>
                 <a href="{% url 'dashboard' %}" class="flex items-center justify-center w-full h-full">
                     <svg class="text-gray-700 fill-gray-700 group-hover:text-blue-600 group-hover:fill-blue-600 peer-checked/expand:text-blue-700 peer-checked/expand:fill-blue-700 transition-all duration-500 ease-in-out {% if request.resolver_match.url_name == 'dashboard' %}text-blue-700 fill-blue-700{% endif %}" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -101,7 +101,7 @@
 
             <!-- Novo Orçamento (Profile) -->
             {% if user.tipo == 'VENDEDOR' or user.tipo == 'ADMINISTRADOR' %}
-            <label for="novo_orcamento" class="{% if request.resolver_match.url_name == 'upload_pdf' %}shadow-lg shadow-blue-400/50{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
+            <label for="novo_orcamento" class="{% if request.resolver_match.url_name == 'upload_pdf' %}shadow-lg shadow-blue-400/35 hover:shadow-xl hover:shadow-blue-400/50 transition-shadow duration-500{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
                 <input class="hidden peer/expand" type="radio" name="path" id="novo_orcamento" {% if request.resolver_match.url_name == 'upload_pdf' %}checked{% endif %}>
                 <a href="{% url 'upload_pdf' %}" class="flex items-center justify-center w-full h-full">
                     <svg class="text-gray-700 fill-gray-700 group-hover:text-blue-600 group-hover:fill-blue-600 peer-checked/expand:text-blue-700 peer-checked/expand:fill-blue-700 transition-all duration-500 ease-in-out {% if request.resolver_match.url_name == 'upload_pdf' %}text-blue-700 fill-blue-700{% endif %}" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -119,7 +119,7 @@
 
             <!-- Painel de Compras (Messages) -->
             {% if user.tipo == 'COMPRADORA' or user.tipo == 'ADMINISTRADOR' %}
-            <label for="painel_compras" class="{% if request.resolver_match.url_name == 'painel_compras' %}shadow-lg shadow-blue-400/50{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
+            <label for="painel_compras" class="{% if request.resolver_match.url_name == 'painel_compras' %}shadow-lg shadow-blue-400/35 hover:shadow-xl hover:shadow-blue-400/50 transition-shadow duration-500{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
                 <input class="hidden peer/expand" type="radio" name="path" id="painel_compras" {% if request.resolver_match.url_name == 'painel_compras' %}checked{% endif %}>
                 <a href="{% url 'painel_compras' %}" class="flex items-center justify-center w-full h-full">
                     <svg class="text-gray-700 fill-gray-700 group-hover:text-blue-600 group-hover:fill-blue-600 peer-checked/expand:text-blue-700 peer-checked/expand:fill-blue-700 transition-all duration-500 ease-in-out {% if request.resolver_match.url_name == 'painel_compras' %}text-blue-700 fill-blue-700{% endif %}" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -138,7 +138,7 @@
             {% endif %}
 
             <!-- Histórico (Help) -->
-            <label for="historico" class="{% if request.resolver_match.url_name == 'historico' %}shadow-lg shadow-blue-400/50{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
+            <label for="historico" class="{% if request.resolver_match.url_name == 'historico' %}shadow-lg shadow-blue-400/35 hover:shadow-xl hover:shadow-blue-400/50 transition-shadow duration-500{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
                 <input class="hidden peer/expand" type="radio" name="path" id="historico" {% if request.resolver_match.url_name == 'historico' %}checked{% endif %}>
                 <a href="{% url 'historico' %}" class="flex items-center justify-center w-full h-full">
                     <svg class="text-gray-700 fill-gray-700 group-hover:text-blue-600 group-hover:fill-blue-600 peer-checked/expand:text-blue-700 peer-checked/expand:fill-blue-700 transition-all duration-500 ease-in-out {% if request.resolver_match.url_name == 'historico' %}text-blue-700 fill-blue-700{% endif %}" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
@@ -150,7 +150,7 @@
 
             <!-- Gerenciar Usuários (Settings) -->
             {% if user.tipo == 'ADMINISTRADOR' %}
-            <label for="admin" class="{% if request.resolver_match.url_name == 'lista_usuarios' %}shadow-lg shadow-blue-400/50{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
+            <label for="admin" class="{% if request.resolver_match.url_name == 'lista_usuarios' %}shadow-lg shadow-blue-400/35 hover:shadow-xl hover:shadow-blue-400/50 transition-shadow duration-500{% endif %} relative w-full h-16 p-4 group flex flex-row gap-3 items-center justify-center rounded-xl cursor-pointer">
                 <input class="hidden peer/expand" type="radio" name="path" id="admin" {% if request.resolver_match.url_name == 'lista_usuarios' %}checked{% endif %}>
                 <a href="{% url 'lista_usuarios' %}" class="flex items-center justify-center w-full h-full">
                     <svg class="text-gray-700 fill-gray-700 group-hover:text-blue-600 group-hover:fill-blue-600 peer-checked/expand:text-blue-700 peer-checked/expand:fill-blue-700 transition-all duration-500 ease-in-out {% if request.resolver_match.url_name == 'lista_usuarios' %}text-blue-700 fill-blue-700{% endif %}" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">

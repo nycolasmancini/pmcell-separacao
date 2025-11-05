@@ -130,19 +130,36 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12"></th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12"></th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {% for item in itens %}
-                    <tr class="hover:bg-gray-50" data-item-id="{{ item.id }}">
+                    <tr class="hover:bg-gray-50 transition-colors {% if item.separado %}row-separated{% endif %}"
+                        data-item-id="{{ item.id }}"
+                        :class="{'row-separated': itemsSeparados.includes({{ item.id }})}">
+
+                        <!-- Checkbox -->
+                        <td class="px-4 py-4 align-top">
+                            <input type="checkbox"
+                                   class="item-checkbox w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500 cursor-pointer"
+                                   data-item-id="{{ item.id }}"
+                                   {% if item.separado %}checked{% endif %}
+                                   {% if pedido.status == 'FINALIZADO' %}disabled{% endif %}
+                                   @change="handleCheckboxChange({{ item.id }}, $event.target.checked)">
+                        </td>
+
                         <!-- Produto -->
                         <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">{{ item.produto.descricao|truncatewords:10 }}</div>
+                            <div class="text-sm font-medium text-gray-900 item-description"
+                                 :class="{'line-through': itemsSeparados.includes({{ item.id }})}">
+                                {{ item.produto.descricao|truncatewords:10 }}
+                            </div>
                             {% if item.substituido %}
                             <div class="text-xs text-blue-600 mt-1">
                                 Substituído por: <strong>{{ item.produto_substituto }}</strong>
@@ -158,55 +175,65 @@
 
                         <!-- Status -->
                         <td class="px-6 py-4">
+                            <span class="status-badge px-2 py-1 text-xs font-semibold rounded-full
+                                {% if item.separado %}bg-green-100 text-green-800
+                                {% elif item.substituido %}bg-blue-100 text-blue-800
+                                {% elif item.em_compra %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}"
+                                :class="{
+                                    'bg-green-100 text-green-800': itemsSeparados.includes({{ item.id }})
+                                }">
+                                <span class="status-text">
+                                    {% if item.separado %}✓ Separado
+                                    {% elif item.substituido %}↔ Substituído
+                                    {% elif item.em_compra %}🛒 Em Compra
+                                    {% else %}⏳ Pendente{% endif %}
+                                </span>
+                            </span>
                             {% if item.separado %}
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                ✓ Separado
-                            </span>
                             <div class="text-xs text-gray-500 mt-1">{{ item.separado_por.nome }} - {{ item.separado_em|date:"d/m H:i" }}</div>
-                            {% elif item.substituido %}
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                ↔ Substituído
-                            </span>
                             {% elif item.em_compra %}
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                🛒 Em Compra
-                            </span>
                             <div class="text-xs text-gray-500 mt-1">{{ item.marcado_compra_por.nome }} - {{ item.marcado_compra_em|date:"d/m H:i" }}</div>
-                            {% else %}
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                                ⏳ Pendente
-                            </span>
                             {% endif %}
                         </td>
 
-                        <!-- Ações -->
-                        <td class="px-6 py-4 text-sm">
-                            <div class="flex gap-2">
-                                {% if not item.separado and not item.substituido and not item.em_compra %}
-                                    {% if user.tipo in 'SEPARADOR,ADMINISTRADOR' %}
-                                    <button @click="separarItem({{ item.id }})"
-                                            class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors">
-                                        Separar
-                                    </button>
-                                    <button @click="abrirModalSubstituir({{ item.id }})"
-                                            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors">
-                                        Substituir
-                                    </button>
-                                    {% endif %}
+                        <!-- Menu Ações -->
+                        <td class="px-4 py-4 align-top" x-data="{ menuOpen: false }">
+                            <div class="relative">
+                                <button @click="menuOpen = !menuOpen"
+                                        class="p-2 hover:bg-gray-200 rounded-full transition-colors"
+                                        title="Opções">
+                                    <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
+                                    </svg>
+                                </button>
 
-                                    {% if user.tipo in 'COMPRADORA,ADMINISTRADOR' %}
-                                    <button @click="abrirModalCompra({{ item.id }})"
-                                            class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded transition-colors">
-                                        Comprar
-                                    </button>
-                                    {% endif %}
-                                {% endif %}
+                                <div x-show="menuOpen"
+                                     @click.away="menuOpen = false"
+                                     x-cloak
+                                     class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
+                                    <div class="py-1">
+                                        {% if user.tipo in 'SEPARADOR,ADMINISTRADOR' %}
+                                        <button @click="abrirModalSubstituir({{ item.id }}); menuOpen = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800 transition-colors">
+                                            <span class="inline-block w-6">↔</span> Substituído
+                                        </button>
+                                        {% endif %}
+
+                                        {% if user.tipo in 'COMPRADORA,ADMINISTRADOR' %}
+                                        <button @click="abrirModalCompra({{ item.id }}); menuOpen = false"
+                                                class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-800 transition-colors">
+                                            <span class="inline-block w-6">🛒</span> Comprar
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
                             Nenhum item encontrado neste pedido.
                         </td>
                     </tr>
@@ -300,6 +327,37 @@
 
 <style>
 [x-cloak] { display: none !important; }
+
+/* Separated item row styling */
+.row-separated {
+    background-color: #f0fdf4 !important; /* Light green background */
+    transition: background-color 0.3s ease;
+}
+
+.row-separated:hover {
+    background-color: #dcfce7 !important; /* Slightly darker on hover */
+}
+
+/* Strikethrough for separated items */
+.line-through {
+    text-decoration: line-through;
+    color: #6b7280; /* Gray color for strikethrough text */
+}
+
+/* Checkbox styling */
+.item-checkbox:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.item-checkbox:not(:disabled) {
+    cursor: pointer;
+}
+
+/* Menu dropdown animation */
+[x-show] {
+    transition: opacity 0.15s ease-in-out;
+}
 </style>
 
 {% endblock %}

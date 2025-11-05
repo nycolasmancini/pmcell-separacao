@@ -97,21 +97,40 @@ class PedidoDetalheWebSocket {
 
         const row = document.querySelector(`tr[data-item-id="${item.id}"]`);
         if (row) {
-            // Atualizar status visual
-            const statusCell = row.querySelector('td:nth-child(4)');
-            if (statusCell) {
-                statusCell.innerHTML = `
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                        ✓ Separado
-                    </span>
-                    <div class="text-xs text-gray-500 mt-1">${item.separado_por} - ${item.separado_em}</div>
+            // Update checkbox
+            const checkbox = row.querySelector('.item-checkbox');
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+
+            // Add separated class to row
+            row.classList.add('row-separated');
+
+            // Add strikethrough to description
+            const description = row.querySelector('.item-description');
+            if (description) {
+                description.classList.add('line-through');
+            }
+
+            // Update status badge
+            const statusBadge = row.querySelector('.status-badge');
+            if (statusBadge) {
+                statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800';
+                statusBadge.innerHTML = `
+                    <span class="status-text">✓ Separado</span>
                 `;
             }
 
-            // Remover botões de ação
-            const actionsCell = row.querySelector('td:nth-child(5)');
-            if (actionsCell) {
-                actionsCell.innerHTML = '<div class="text-xs text-gray-500">Concluído</div>';
+            // Add timestamp below status
+            const statusCell = row.querySelector('td:nth-child(5)');
+            if (statusCell) {
+                const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
+                if (!existingTimestamp) {
+                    const timestampDiv = document.createElement('div');
+                    timestampDiv.className = 'text-xs text-gray-500 mt-1';
+                    timestampDiv.textContent = `${item.separado_por} - ${item.separado_em}`;
+                    statusCell.appendChild(timestampDiv);
+                }
             }
         }
 
@@ -265,6 +284,9 @@ function pedidoDetalheApp(pedidoId) {
         pedidoId: pedidoId,
         ws: null,
 
+        // Track separated items for dynamic styling
+        itemsSeparados: [],
+
         // Modals
         modalSubstituir: {
             show: false,
@@ -282,6 +304,92 @@ function pedidoDetalheApp(pedidoId) {
         init() {
             console.log('Inicializando pedido_detalhe app para pedido:', this.pedidoId);
             this.ws = new PedidoDetalheWebSocket(this.pedidoId);
+
+            // Initialize itemsSeparados with already separated items
+            document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {
+                const itemId = parseInt(checkbox.dataset.itemId);
+                if (!this.itemsSeparados.includes(itemId)) {
+                    this.itemsSeparados.push(itemId);
+                }
+            });
+        },
+
+        // Handle checkbox change for item separation
+        async handleCheckboxChange(itemId, isChecked) {
+            if (isChecked) {
+                // Separate item
+                if (!confirm('Confirma a separação deste item?')) {
+                    // Revert checkbox if user cancels
+                    const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
+                    if (checkbox) checkbox.checked = false;
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/pedidos/item/${itemId}/separar/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCsrfToken()
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        console.log('Item separado com sucesso via checkbox:', data);
+
+                        // Add to separated items array
+                        if (!this.itemsSeparados.includes(itemId)) {
+                            this.itemsSeparados.push(itemId);
+                        }
+
+                        // Apply visual feedback
+                        this.applyVisualFeedback(itemId, true);
+
+                        // WebSocket will also handle updates
+                    } else {
+                        alert('Erro: ' + (data.error || 'Erro ao separar item'));
+                        // Revert checkbox
+                        const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
+                        if (checkbox) checkbox.checked = false;
+                    }
+                } catch (error) {
+                    console.error('Erro ao separar item via checkbox:', error);
+                    alert('Erro ao separar item. Tente novamente.');
+                    // Revert checkbox
+                    const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
+                    if (checkbox) checkbox.checked = false;
+                }
+            }
+            // Note: We don't allow unchecking (unseparating) items
+        },
+
+        // Apply visual feedback to separated items
+        applyVisualFeedback(itemId, isSeparated) {
+            const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+            if (!row) return;
+
+            if (isSeparated) {
+                // Add separated class to row
+                row.classList.add('row-separated');
+
+                // Add strikethrough to description
+                const description = row.querySelector('.item-description');
+                if (description) {
+                    description.classList.add('line-through');
+                }
+
+                // Update status badge
+                const statusBadge = row.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800';
+                    const statusText = statusBadge.querySelector('.status-text');
+                    if (statusText) {
+                        statusText.textContent = '✓ Separado';
+                    }
+                }
+            }
         },
 
         // Separar Item

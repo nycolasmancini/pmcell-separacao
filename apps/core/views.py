@@ -696,12 +696,12 @@ from asgiref.sync import async_to_sync
 from django.http import JsonResponse
 
 
-@admin_or_separador
+@login_required_custom
 @require_http_methods(["POST"])
 def separar_item_view(request, item_id):
     """
     View para marcar um item como separado (tudo-ou-nada).
-    Disponível para SEPARADOR ou ADMINISTRADOR.
+    Disponível para qualquer usuário autenticado.
     """
     item = get_object_or_404(ItemPedido, id=item_id)
     pedido = item.pedido

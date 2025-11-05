@@ -132,10 +132,34 @@ class PedidoDetalheWebSocket {
                     statusCell.appendChild(timestampDiv);
                 }
             }
+
+            // Update statistics without full page reload
+            this.updateStatistics();
+        }
+    }
+
+    updateStatistics() {
+        // Update statistics cards dynamically
+        const separatedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
+        const separatedCount = separatedCheckboxes.length;
+        const totalItems = document.querySelectorAll('.item-checkbox').length;
+        const progress = totalItems > 0 ? Math.round((separatedCount / totalItems) * 100) : 0;
+
+        // Update "Separados" count
+        const separadosElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-green-600');
+        if (separadosElement) {
+            separadosElement.textContent = separatedCount;
         }
 
-        // Recarregar página para atualizar estatísticas
-        setTimeout(() => location.reload(), 1000);
+        // Update progress bar
+        const progressBar = document.querySelector('.bg-green-600.h-2.rounded-full');
+        const progressText = document.querySelector('.text-sm.font-bold.text-gray-800');
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
+        }
+        if (progressText) {
+            progressText.textContent = `${progress}%`;
+        }
     }
 
     handleItemEmCompra(item) {
@@ -143,23 +167,31 @@ class PedidoDetalheWebSocket {
 
         const row = document.querySelector(`tr[data-item-id="${item.id}"]`);
         if (row) {
-            const statusCell = row.querySelector('td:nth-child(4)');
+            const statusCell = row.querySelector('td:nth-child(5)');
             if (statusCell) {
-                statusCell.innerHTML = `
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        🛒 Em Compra
-                    </span>
-                    <div class="text-xs text-gray-500 mt-1">${item.marcado_compra_por} - ${item.marcado_compra_em}</div>
-                `;
+                const statusBadge = statusCell.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800';
+                    statusBadge.innerHTML = `<span class="status-text">🛒 Em Compra</span>`;
+                }
+
+                // Add timestamp if not exists
+                const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
+                if (!existingTimestamp) {
+                    const timestampDiv = document.createElement('div');
+                    timestampDiv.className = 'text-xs text-gray-500 mt-1';
+                    timestampDiv.textContent = `${item.marcado_compra_por} - ${item.marcado_compra_em}`;
+                    statusCell.appendChild(timestampDiv);
+                }
             }
 
-            const actionsCell = row.querySelector('td:nth-child(5)');
-            if (actionsCell) {
-                actionsCell.innerHTML = '<div class="text-xs text-gray-500">Aguardando compra</div>';
+            // Update "Em Compra" statistics
+            const emCompraCount = document.querySelectorAll('.status-badge.bg-yellow-100').length;
+            const emCompraElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-yellow-600');
+            if (emCompraElement) {
+                emCompraElement.textContent = emCompraCount;
             }
         }
-
-        setTimeout(() => location.reload(), 1000);
     }
 
     handleItemSubstituido(item) {
@@ -168,41 +200,61 @@ class PedidoDetalheWebSocket {
         const row = document.querySelector(`tr[data-item-id="${item.id}"]`);
         if (row) {
             // Atualizar descrição do produto
-            const produtoCell = row.querySelector('td:nth-child(1)');
+            const produtoCell = row.querySelector('td:nth-child(2)');
             if (produtoCell) {
-                const descDiv = produtoCell.querySelector('div');
-                if (descDiv) {
-                    descDiv.innerHTML += `
-                        <div class="text-xs text-blue-600 mt-1">
-                            Substituído por: <strong>${item.produto_substituto}</strong>
-                        </div>
-                    `;
+                const descDiv = produtoCell.querySelector('.item-description');
+                if (descDiv && descDiv.parentElement) {
+                    // Check if substitution info already exists
+                    const existingSubInfo = descDiv.parentElement.querySelector('.text-xs.text-blue-600');
+                    if (!existingSubInfo) {
+                        const subDiv = document.createElement('div');
+                        subDiv.className = 'text-xs text-blue-600 mt-1';
+                        subDiv.innerHTML = `Substituído por: <strong>${item.produto_substituto}</strong>`;
+                        descDiv.parentElement.appendChild(subDiv);
+                    }
                 }
             }
 
             // Atualizar status
-            const statusCell = row.querySelector('td:nth-child(4)');
+            const statusCell = row.querySelector('td:nth-child(5)');
             if (statusCell) {
-                statusCell.innerHTML = `
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                        ↔ Substituído
-                    </span>
-                `;
+                const statusBadge = statusCell.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800';
+                    statusBadge.innerHTML = `<span class="status-text">↔ Substituído</span>`;
+                }
             }
 
-            const actionsCell = row.querySelector('td:nth-child(5)');
-            if (actionsCell) {
-                actionsCell.innerHTML = '<div class="text-xs text-gray-500">Concluído</div>';
+            // Update "Substituídos" statistics
+            const substituidosCount = document.querySelectorAll('.status-badge.bg-blue-100').length;
+            const substituidosElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-blue-600');
+            if (substituidosElement) {
+                substituidosElement.textContent = substituidosCount;
             }
         }
-
-        setTimeout(() => location.reload(), 1000);
     }
 
     handlePedidoAtualizado(pedido) {
         console.log('[WebSocket] Pedido atualizado:', pedido);
-        // Recarregar para atualizar status do pedido
-        setTimeout(() => location.reload(), 500);
+        // Update status display dynamically instead of reloading
+        const statusElement = document.querySelector('.text-lg.font-bold');
+        if (statusElement && pedido.status) {
+            // Update status text
+            const statusMap = {
+                'PENDENTE': 'Pendente',
+                'EM_SEPARACAO': 'Em Separação',
+                'AGUARDANDO_COMPRA': 'Aguardando Compra',
+                'FINALIZADO': 'Finalizado'
+            };
+            statusElement.textContent = statusMap[pedido.status] || pedido.status;
+
+            // Update status color
+            statusElement.className = 'text-lg font-bold';
+            if (pedido.status === 'PENDENTE') statusElement.classList.add('text-gray-600');
+            else if (pedido.status === 'EM_SEPARACAO') statusElement.classList.add('text-blue-600');
+            else if (pedido.status === 'AGUARDANDO_COMPRA') statusElement.classList.add('text-yellow-600');
+            else if (pedido.status === 'FINALIZADO') statusElement.classList.add('text-green-600');
+        }
     }
 
     handlePedidoFinalizado(pedidoId) {
@@ -344,25 +396,26 @@ function pedidoDetalheApp(pedidoId) {
                             this.itemsSeparados.push(itemId);
                         }
 
-                        // Apply visual feedback
+                        // Apply visual feedback ONLY after server confirms success
                         this.applyVisualFeedback(itemId, true);
 
                         // WebSocket will also handle updates
                     } else {
                         alert('Erro: ' + (data.error || 'Erro ao separar item'));
-                        // Revert checkbox
-                        const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
-                        if (checkbox) checkbox.checked = false;
+                        // Revert checkbox and visual feedback
+                        this.revertVisualFeedback(itemId);
                     }
                 } catch (error) {
                     console.error('Erro ao separar item via checkbox:', error);
                     alert('Erro ao separar item. Tente novamente.');
-                    // Revert checkbox
-                    const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
-                    if (checkbox) checkbox.checked = false;
+                    // Revert checkbox and visual feedback
+                    this.revertVisualFeedback(itemId);
                 }
+            } else {
+                // Prevent unchecking - we don't allow unseparating items
+                const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
+                if (checkbox) checkbox.checked = true;
             }
-            // Note: We don't allow unchecking (unseparating) items
         },
 
         // Apply visual feedback to separated items
@@ -387,6 +440,40 @@ function pedidoDetalheApp(pedidoId) {
                     const statusText = statusBadge.querySelector('.status-text');
                     if (statusText) {
                         statusText.textContent = '✓ Separado';
+                    }
+                }
+            }
+        },
+
+        // Revert visual feedback when operation fails
+        revertVisualFeedback(itemId) {
+            // Revert checkbox
+            const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
+            if (checkbox) checkbox.checked = false;
+
+            // Remove from separated items array
+            const index = this.itemsSeparados.indexOf(itemId);
+            if (index > -1) {
+                this.itemsSeparados.splice(index, 1);
+            }
+
+            // Remove visual styling
+            const row = document.querySelector(`tr[data-item-id="${itemId}"]`);
+            if (row) {
+                row.classList.remove('row-separated');
+
+                const description = row.querySelector('.item-description');
+                if (description) {
+                    description.classList.remove('line-through');
+                }
+
+                // Reset status badge to original state
+                const statusBadge = row.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800';
+                    const statusText = statusBadge.querySelector('.status-text');
+                    if (statusText) {
+                        statusText.textContent = '⏳ Pendente';
                     }
                 }
             }

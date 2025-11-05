@@ -14,8 +14,8 @@
 ## 📊 STATUS GERAL DO PROJETO
 - **Início**: 04/11/2024
 - **Status Atual**: EM DESENVOLVIMENTO
-- **Fase Atual**: FASE 4 - ✅ COMPLETA | Próxima: FASE 5
-- **Progresso Total**: 50%
+- **Fase Atual**: FASE 6 - ✅ COMPLETA | Próxima: FASE 7
+- **Progresso Total**: 70%
 - **GitHub**: https://github.com/nycolasmancini/pmcell-separacao
 - **URL Produção**: https://web-production-312d.up.railway.app
 
@@ -260,50 +260,99 @@ pmcell/
 
 ---
 
-### **FASE 5: Detalhes e Separação de Pedidos** (3 dias)
-**Status**: ⏰ Pendente
+### **FASE 5: Detalhes e Separação de Pedidos** ✅ COMPLETA
+**Status**: ✅ COMPLETA - 05/11/2024
 
 **Tarefas**:
-- [ ] Tela de detalhes do pedido
-- [ ] Lista de itens do pedido
-- [ ] Botão "Separar" por item
-- [ ] Marcar quantidade separada
-- [ ] Botão "Marcar para Compra"
-- [ ] Modal de confirmação (marcar em outros pedidos?)
-- [ ] Botão "Substituir" com modal
-- [ ] Campo para informar produto substituto
-- [ ] Botão "Finalizar Pedido"
-- [ ] Validação: todos itens separados
-- [ ] WebSocket updates dos itens
-- [ ] Soft delete de pedidos (vendedor)
+- [x] Tela de detalhes do pedido
+- [x] Lista de itens do pedido
+- [x] Botão "Separar" por item (tudo-ou-nada)
+- [x] Botão "Marcar para Compra"
+- [x] Modal de confirmação (marcar em outros pedidos)
+- [x] Botão "Substituir" com modal
+- [x] Campo para informar produto substituto (texto livre)
+- [x] Botão "Finalizar Pedido"
+- [x] Validação: todos itens separados/substituídos e nenhum em compra
+- [x] WebSocket updates dos itens em tempo real
+- [x] Soft delete de pedidos (vendedor criador ou admin)
 
 **Views criadas**:
-- [ ] PedidoDetalheView
-- [ ] SepararItemView
-- [ ] MarcarCompraView
-- [ ] SubstituirProdutoView
-- [ ] FinalizarPedidoView
-- [ ] DeletarPedidoView
+- [x] pedido_detalhe_view (GET - mostra detalhes e itens)
+- [x] separar_item_view (POST - SEPARADOR/ADMIN)
+- [x] marcar_compra_view (GET/POST - COMPRADORA/ADMIN)
+- [x] substituir_item_view (POST - SEPARADOR/ADMIN)
+- [x] finalizar_pedido_view (POST - SEPARADOR/ADMIN)
+- [x] deletar_pedido_view (POST - VENDEDOR criador/ADMIN)
+
+**Forms criados**:
+- [x] SubstituirProdutoForm (campo texto para produto substituto)
+- [x] MarcarCompraForm (checkbox múltiplo para outros pedidos)
+
+**Templates criados**:
+- [x] pedido_detalhe.html (com modais integrados em Alpine.js)
+
+**JavaScript criado**:
+- [x] static/js/pedido_detalhe.js (WebSocket client + Alpine.js app)
+
+**WebSocket**:
+- [x] PedidoDetalheConsumer (eventos: item_separado, item_em_compra, item_substituido, pedido_atualizado, pedido_finalizado, pedido_deletado)
+- [x] Rota: ws/pedido/<int:pedido_id>/
+
+**Entregas**:
+- ✅ Sistema completo de separação de pedidos funcionando
+- ✅ WebSocket com atualizações em tempo real de itens
+- ✅ Modais para substituição e marcação de compra
+- ✅ Validações de permissão (SEPARADOR, COMPRADORA, VENDEDOR)
+- ✅ Marcar compra com opção de marcar em múltiplos pedidos
+- ✅ Soft delete com permissões (vendedor criador ou admin)
+- ✅ Interface moderna e responsiva com Alpine.js
+- ✅ Auditoria completa de todas ações
+- ✅ Broadcast para dashboard quando pedido é atualizado
 
 ---
 
-### **FASE 6: Painel de Compras** (2 dias)
-**Status**: ⏰ Pendente
+### **FASE 6: Painel de Compras** ✅ COMPLETA
+**Status**: ✅ COMPLETA - 05/11/2024
 
 **Tarefas**:
-- [ ] Tela do painel de compras
-- [ ] Listar itens com em_compra=True
-- [ ] Agrupamento por produto
-- [ ] Mostrar pedidos relacionados
-- [ ] Botão "Confirmar Compra"
-- [ ] Histórico de compras
-- [ ] Filtros e busca
-- [ ] WebSocket para atualizações
+- [x] Tela do painel de compras
+- [x] Listar itens com em_compra=True
+- [x] Agrupamento por produto
+- [x] Mostrar pedidos relacionados
+- [x] Botão "Confirmar Compra"
+- [x] Histórico de compras (90 dias)
+- [x] Filtros e busca (produto e pedido)
+- [x] WebSocket para atualizações
 
 **Views criadas**:
-- [ ] PainelComprasView
-- [ ] ConfirmarCompraView
-- [ ] HistoricoComprasView
+- [x] painel_compras_view (GET)
+- [x] confirmar_compra_view (POST)
+- [x] historico_compras_view (GET)
+
+**WebSocket**:
+- [x] PainelComprasConsumer (eventos: item_marcado_compra, compra_confirmada, item_separado_direto)
+- [x] Rota: ws/painel-compras/
+
+**Templates criados**:
+- [x] painel_compras.html (com Alpine.js e filtros)
+- [x] historico_compras.html (com paginação)
+
+**JavaScript criado**:
+- [x] static/js/painel_compras.js (WebSocket client + Alpine.js app)
+
+**Entregas**:
+- ✅ Sistema completo de painel de compras funcionando
+- ✅ Agrupamento por produto com quantidade total
+- ✅ Lista de pedidos relacionados expandível
+- ✅ Confirmação de compra (marca compra_realizada=True)
+- ✅ SEPARADOR pode separar itens marcados para compra (remove da lista)
+- ✅ Histórico de compras dos últimos 90 dias com paginação
+- ✅ Filtros por produto (código/descrição) e pedido específico
+- ✅ WebSocket com atualizações em tempo real
+- ✅ Card no dashboard mostrando itens aguardando compra
+- ✅ Link no navbar para COMPRADORA e ADMINISTRADOR
+- ✅ Auditoria completa de todas ações
+- ✅ Interface moderna e responsiva com Tailwind CSS
 
 ---
 
@@ -471,14 +520,14 @@ pmcell/
 
 ## 📈 MÉTRICAS DE PROGRESSO
 
-- **Fases Completas**: 5/10 (FASE 0 ✅, FASE 1 ✅, FASE 2 ✅, FASE 3 ✅, FASE 4 ✅)
-- **Views Implementadas**: 8/30+ (home, login, logout, reset_pin, dashboard ✅, upload_pdf, confirmar_pedido ✅, pedido_detalhe)
+- **Fases Completas**: 7/10 (FASE 0-6 ✅)
+- **Views Implementadas**: 17/30+ (separação + compras ✅)
 - **Modelos Criados**: 5/5 (Usuario, Pedido, ItemPedido, Produto, LogAuditoria ✅)
-- **Templates Criados**: 6 (base, login, dashboard ✅, reset_pin, upload_pdf, confirmar_pedido)
-- **Forms Criados**: 2/4+ (UploadPDFForm ✅, ConfirmarPedidoForm ✅)
+- **Templates Criados**: 9 (base, login, dashboard, reset_pin, upload_pdf, confirmar_pedido, pedido_detalhe, painel_compras, historico_compras ✅)
+- **Forms Criados**: 4/6+ (UploadPDFForm, ConfirmarPedidoForm, SubstituirProdutoForm, MarcarCompraForm ✅)
 - **Testes Escritos**: 2 (test_login.py ✅, test_bloqueio.py ✅)
-- **WebSocket**: DashboardConsumer ✅ (com broadcast e reconexão automática)
-- **JavaScript**: dashboard.js ✅ (WebSocket client-side)
+- **WebSocket**: 3 Consumers ✅ (DashboardConsumer, PedidoDetalheConsumer, PainelComprasConsumer)
+- **JavaScript**: 3 arquivos ✅ (dashboard.js, pedido_detalhe.js, painel_compras.js)
 - **Utils**: apps/core/utils.py ✅ (cálculo de tempo útil e métricas)
 - **Deploy Railway**: ✅ FUNCIONANDO - https://web-production-312d.up.railway.app
 
@@ -670,4 +719,113 @@ pmcell/
 
 ---
 
-**Próxima ação**: Iniciar FASE 5 - Detalhes e Separação de Pedidos
+### 05/11/2024 - FASE 5 Completa (00:45)
+- ✅ Sistema completo de separação de pedidos implementado
+- ✅ PedidoDetalheConsumer WebSocket para atualizações em tempo real
+- ✅ 6 views implementadas (pedido_detalhe, separar_item, marcar_compra, substituir_item, finalizar_pedido, deletar_pedido)
+- ✅ 2 forms criados (SubstituirProdutoForm, MarcarCompraForm)
+- ✅ Template pedido_detalhe.html com modais integrados (Alpine.js)
+- ✅ JavaScript pedido_detalhe.js com WebSocket client e Alpine.js app
+- ✅ URLs adicionadas para todas as ações de separação
+- ✅ Broadcast WebSocket para dashboard quando pedido é atualizado
+
+**Arquivos criados**:
+- templates/pedido_detalhe.html: Tela de detalhes completa com lista de itens e modais
+- static/js/pedido_detalhe.js: WebSocket client + Alpine.js app para interações
+- apps/core/forms.py: SubstituirProdutoForm, MarcarCompraForm
+
+**Arquivos atualizados**:
+- apps/core/consumers.py: PedidoDetalheConsumer adicionado
+- apps/core/routing.py: Rota ws/pedido/<int:pedido_id>/ adicionada
+- apps/core/views.py: 6 views implementadas + pedido_detalhe_view completa
+- pmcell_settings/urls.py: 5 URLs adicionadas para ações de separação
+- apps/core/permissions.py: Imports de decorators adicionados
+
+**Funcionalidades implementadas**:
+1. Tela de detalhes mostra: info do pedido, estatísticas, lista de itens, progresso
+2. Separar item (tudo-ou-nada): SEPARADOR/ADMIN
+3. Marcar para compra: COMPRADORA/ADMIN + modal com outros pedidos
+4. Substituir produto: SEPARADOR/ADMIN + campo texto livre
+5. Finalizar pedido: SEPARADOR/ADMIN + validações completas
+6. Deletar pedido (soft delete): VENDEDOR criador/ADMIN
+7. WebSocket atualiza itens em tempo real (6 eventos diferentes)
+8. Broadcast para dashboard quando pedido é atualizado
+9. Modais com Alpine.js (substituir e marcar compra)
+10. Auditoria completa de todas ações
+
+**Decisões de implementação**:
+1. Separação: tudo-ou-nada (não permite parcial)
+2. Marcar compra: pergunta se quer marcar em outros pedidos (via modal)
+3. Substituição: campo texto livre para informar produto substituto
+4. Delete: vendedor criador ou admin a qualquer momento
+5. Modais integrados no template (não como componentes separados)
+6. Alpine.js para gerenciar estado e interações client-side
+7. WebSocket com reconexão automática e ping/pong
+
+**Conquistas da FASE 5**:
+1. Sistema de separação completo e funcional
+2. WebSocket em tempo real para cada pedido
+3. Interface moderna com Alpine.js e Tailwind CSS
+4. Permissões corretamente implementadas por tipo de usuário
+5. Validações de negócio robustas
+6. Auditoria completa com IP e user agent
+7. Broadcast para múltiplos groups (pedido específico + dashboard)
+
+---
+
+### 05/11/2024 - FASE 6 Completa (22:00)
+- ✅ Sistema completo de painel de compras implementado
+- ✅ PainelComprasConsumer WebSocket para atualizações em tempo real
+- ✅ 3 views implementadas (painel_compras, confirmar_compra, historico_compras)
+- ✅ 2 templates criados (painel_compras.html, historico_compras.html)
+- ✅ JavaScript painel_compras.js com WebSocket client e Alpine.js app
+- ✅ URLs adicionadas para todas as rotas de compras
+- ✅ Navbar atualizada com link para painel de compras
+- ✅ Dashboard atualizado com card mostrando itens aguardando compra
+
+**Arquivos criados**:
+- templates/painel_compras.html: Tela principal com lista agrupada por produto
+- templates/historico_compras.html: Histórico dos últimos 90 dias com paginação
+- static/js/painel_compras.js: WebSocket client + Alpine.js app
+- apps/core/consumers.py: PainelComprasConsumer adicionado
+
+**Arquivos atualizados**:
+- apps/core/views.py: 3 views adicionadas + separar_item_view atualizada
+- apps/core/routing.py: Rota ws/painel-compras/ adicionada
+- pmcell_settings/urls.py: 3 URLs adicionadas (painel-compras, confirmar, historico)
+- templates/base.html: Link "Painel de Compras" adicionado ao navbar
+- templates/dashboard.html: Card de itens aguardando compra adicionado
+
+**Funcionalidades implementadas**:
+1. Painel mostra itens agrupados por produto com quantidade total
+2. Lista expandível de pedidos relacionados para cada produto
+3. Confirmar compra: marca compra_realizada=True para todos itens do produto
+4. SEPARADOR pode separar itens marcados para compra (remove da lista)
+5. Histórico de compras dos últimos 90 dias com paginação (20 por página)
+6. Filtros por produto (código/descrição) e por número de pedido
+7. WebSocket com atualizações em tempo real (3 eventos diferentes)
+8. Card no dashboard mostrando contagem de itens aguardando compra
+9. Auditoria completa de todas ações
+10. Interface responsiva com Tailwind CSS e Alpine.js
+
+**Decisões de implementação**:
+1. Compra confirmada: cria novo status compra_realizada=True (não remove de em_compra)
+2. SEPARADOR pode separar itens que estão em compra (achado no estoque)
+3. Histórico: 90 dias de dados com paginação de 20 itens por página
+4. Agrupamento: por produto com quantidade total e lista de pedidos
+5. Filtros: client-side com Alpine.js (sem reload da página)
+6. WebSocket: reconexão automática e broadcast para painel e dashboard
+7. Card no dashboard: visível apenas para COMPRADORA e ADMINISTRADOR
+
+**Conquistas da FASE 6**:
+1. Sistema de compras completo e funcional
+2. WebSocket em tempo real para painel de compras
+3. Interface moderna com filtros e agrupamento
+4. Histórico com paginação eficiente
+5. Integração com dashboard e navbar
+6. Auditoria completa de todas ações
+7. Workflow completo: marcar → confirmar → separar
+
+---
+
+**Próxima ação**: Iniciar FASE 7 - Gestão de Usuários

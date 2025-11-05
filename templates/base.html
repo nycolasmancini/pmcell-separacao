@@ -42,7 +42,7 @@
                     {% endif %}
 
                     {% if user.tipo == 'COMPRADORA' or user.tipo == 'ADMINISTRADOR' %}
-                        <a href="#" class="hover:text-blue-200 transition opacity-50">Compras</a>
+                        <a href="{% url 'painel_compras' %}" class="hover:text-blue-200 transition">Painel de Compras</a>
                     {% endif %}
 
                     {% if user.tipo == 'ADMINISTRADOR' %}

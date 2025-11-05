@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pedido #{{ pedido.numero_orcamento }} - Sistema PMCELL{% endblock %}
+
+{% block extra_head %}
+<script src="{% static 'js/pedido_detalhe.js' %}" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8" x-data="pedidoDetalheApp({{ pedido.id }})">
+
+    <!-- Header -->
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+                ← Voltar ao Dashboard
+            </a>
+            <h1 class="text-3xl font-bold text-gray-800">
+                Pedido #{{ pedido.numero_orcamento }}
+                <span id="ws-status-indicator" class="inline-block w-2 h-2 bg-gray-400 rounded-full ml-2" title="Conectando..."></span>
+            </h1>
+            <p class="text-gray-600 mt-1">Cliente: {{ pedido.nome_cliente }} ({{ pedido.codigo_cliente }})</p>
+        </div>
+
+        <div class="flex gap-2">
+            {% if pode_finalizar and user.tipo in 'SEPARADOR,ADMINISTRADOR' %}
+            <button @click="finalizarPedido()"
+                    class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                ✓ Finalizar Pedido
+            </button>
+            {% endif %}
+
+            {% if pode_deletar %}
+            <button @click="deletarPedido()"
+                    class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                🗑 Deletar Pedido
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <!-- Status -->
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 font-medium mb-1">Status</p>
+            <p class="text-lg font-bold
+                {% if pedido.status == 'PENDENTE' %}text-gray-600
+                {% elif pedido.status == 'EM_SEPARACAO' %}text-blue-600
+                {% elif pedido.status == 'AGUARDANDO_COMPRA' %}text-yellow-600
+                {% elif pedido.status == 'FINALIZADO' %}text-green-600
+                {% else %}text-red-600{% endif %}">
+                {{ pedido.get_status_display }}
+            </p>
+        </div>
+
+        <!-- Vendedor -->
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 font-medium mb-1">Vendedor</p>
+            <p class="text-lg font-bold text-gray-800">{{ pedido.vendedor.nome }}</p>
+        </div>
+
+        <!-- Data -->
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 font-medium mb-1">Data do Pedido</p>
+            <p class="text-lg font-bold text-gray-800">{{ pedido.data|date:"d/m/Y" }}</p>
+        </div>
+
+        <!-- Progresso -->
+        <div class="bg-white rounded-lg shadow p-4">
+            <p class="text-sm text-gray-500 font-medium mb-1">Progresso</p>
+            <div class="flex items-center">
+                <div class="flex-grow bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-600 h-2 rounded-full" style="width: {{ progresso_separacao }}%"></div>
+                </div>
+                <p class="text-sm font-bold text-gray-800">{{ progresso_separacao }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <p class="text-2xl font-bold text-gray-800">{{ total_itens }}</p>
+            <p class="text-sm text-gray-500">Total Itens</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <p class="text-2xl font-bold text-green-600">{{ itens_separados }}</p>
+            <p class="text-sm text-gray-500">Separados</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <p class="text-2xl font-bold text-blue-600">{{ itens_substituidos }}</p>
+            <p class="text-sm text-gray-500">Substituídos</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4 text-center">
+            <p class="text-2xl font-bold text-yellow-600">{{ itens_em_compra }}</p>
+            <p class="text-sm text-gray-500">Em Compra</p>
+        </div>
+    </div>
+
+    <!-- Informações do Pedido -->
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Informações do Pedido</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <p class="text-sm text-gray-500">Logística:</p>
+                <p class="font-semibold text-gray-800">{{ pedido.get_logistica_display }}</p>
+            </div>
+            <div>
+                <p class="text-sm text-gray-500">Embalagem:</p>
+                <p class="font-semibold text-gray-800">{{ pedido.get_embalagem_display }}</p>
+            </div>
+            {% if pedido.observacoes %}
+            <div class="md:col-span-2">
+                <p class="text-sm text-gray-500">Observações:</p>
+                <p class="font-semibold text-gray-800">{{ pedido.observacoes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Lista de Itens -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <h2 class="text-xl font-bold text-gray-800">Itens do Pedido</h2>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in itens %}
+                    <tr class="hover:bg-gray-50" data-item-id="{{ item.id }}">
+                        <!-- Produto -->
+                        <td class="px-6 py-4">
+                            <div class="text-sm font-medium text-gray-900">{{ item.produto.descricao|truncatewords:10 }}</div>
+                            {% if item.substituido %}
+                            <div class="text-xs text-blue-600 mt-1">
+                                Substituído por: <strong>{{ item.produto_substituto }}</strong>
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Código -->
+                        <td class="px-6 py-4 text-sm text-gray-500">{{ item.produto.codigo }}</td>
+
+                        <!-- Quantidade -->
+                        <td class="px-6 py-4 text-sm text-gray-900 font-semibold">{{ item.quantidade_solicitada }}</td>
+
+                        <!-- Status -->
+                        <td class="px-6 py-4">
+                            {% if item.separado %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                ✓ Separado
+                            </span>
+                            <div class="text-xs text-gray-500 mt-1">{{ item.separado_por.nome }} - {{ item.separado_em|date:"d/m H:i" }}</div>
+                            {% elif item.substituido %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                ↔ Substituído
+                            </span>
+                            {% elif item.em_compra %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                🛒 Em Compra
+                            </span>
+                            <div class="text-xs text-gray-500 mt-1">{{ item.marcado_compra_por.nome }} - {{ item.marcado_compra_em|date:"d/m H:i" }}</div>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                ⏳ Pendente
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Ações -->
+                        <td class="px-6 py-4 text-sm">
+                            <div class="flex gap-2">
+                                {% if not item.separado and not item.substituido and not item.em_compra %}
+                                    {% if user.tipo in 'SEPARADOR,ADMINISTRADOR' %}
+                                    <button @click="separarItem({{ item.id }})"
+                                            class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors">
+                                        Separar
+                                    </button>
+                                    <button @click="abrirModalSubstituir({{ item.id }})"
+                                            class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors">
+                                        Substituir
+                                    </button>
+                                    {% endif %}
+
+                                    {% if user.tipo in 'COMPRADORA,ADMINISTRADOR' %}
+                                    <button @click="abrirModalCompra({{ item.id }})"
+                                            class="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-xs rounded transition-colors">
+                                        Comprar
+                                    </button>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                            Nenhum item encontrado neste pedido.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal: Substituir Produto -->
+    <div x-show="modalSubstituir.show"
+         x-cloak
+         class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+         @click.self="modalSubstituir.show = false">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Substituir Produto</h3>
+                <p class="text-sm text-gray-500 mb-4">Informe o código ou descrição do produto que foi usado no lugar:</p>
+
+                <form @submit.prevent="substituirItem()">
+                    <input type="text"
+                           x-model="modalSubstituir.produtoSubstituto"
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
+                           placeholder="Ex: Produto ABC ou Código 12345"
+                           required>
+
+                    <div class="flex gap-2 justify-end">
+                        <button type="button"
+                                @click="modalSubstituir.show = false"
+                                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                            Confirmar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Marcar para Compra -->
+    <div x-show="modalCompra.show"
+         x-cloak
+         class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+         @click.self="modalCompra.show = false">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">Marcar para Compra</h3>
+
+                <div x-show="modalCompra.outrosItens.length > 0">
+                    <p class="text-sm text-gray-500 mb-4">
+                        Este produto também está em outros pedidos. Deseja marcar para compra nesses pedidos também?
+                    </p>
+
+                    <div class="max-h-60 overflow-y-auto mb-4 border rounded-lg p-4 bg-gray-50">
+                        <template x-for="item in modalCompra.outrosItens" :key="item.id">
+                            <label class="flex items-center mb-2 cursor-pointer hover:bg-gray-100 p-2 rounded">
+                                <input type="checkbox"
+                                       :value="item.id"
+                                       x-model="modalCompra.itensSelecionados"
+                                       class="form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700" x-text="`Pedido ${item.pedido_numero} - Qtd: ${item.quantidade}`"></span>
+                            </label>
+                        </template>
+                    </div>
+                </div>
+
+                <div x-show="modalCompra.outrosItens.length === 0" class="mb-4">
+                    <p class="text-sm text-gray-500">Não há outros pedidos com este produto.</p>
+                </div>
+
+                <div class="flex gap-2 justify-end">
+                    <button type="button"
+                            @click="modalCompra.show = false"
+                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="button"
+                            @click="marcarCompra()"
+                            class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                        Confirmar Compra
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+[x-cloak] { display: none !important; }
+</style>
+
+{% endblock %}

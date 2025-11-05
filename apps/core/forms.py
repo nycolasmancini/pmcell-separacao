@@ -102,5 +102,54 @@ class ConfirmarPedidoForm(forms.Form):
         return embalagem
 
 
+# =====================
+# FASE 5: Separação de Pedidos
+# =====================
+
+class SubstituirProdutoForm(forms.Form):
+    """Formulário para substituir produto em um item do pedido"""
+    produto_substituto = forms.CharField(
+        label='Produto Substituto',
+        max_length=200,
+        required=True,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent',
+            'placeholder': 'Ex: Produto ABC ou Código 12345'
+        }),
+        help_text='Informe o código ou descrição do produto que foi usado no lugar'
+    )
+
+    def clean_produto_substituto(self):
+        """Valida o campo produto_substituto"""
+        produto_substituto = self.cleaned_data.get('produto_substituto')
+        if not produto_substituto or not produto_substituto.strip():
+            raise forms.ValidationError('Informe o produto substituto.')
+        return produto_substituto.strip()
+
+
+class MarcarCompraForm(forms.Form):
+    """Formulário para marcar item(s) para compra"""
+    outros_pedidos = forms.MultipleChoiceField(
+        label='Marcar também em outros pedidos',
+        required=False,
+        widget=forms.CheckboxSelectMultiple(attrs={
+            'class': 'form-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'
+        }),
+        help_text='Selecione outros pedidos onde o mesmo produto deve ser marcado para compra'
+    )
+
+    def __init__(self, *args, **kwargs):
+        outros_itens = kwargs.pop('outros_itens', [])
+        super().__init__(*args, **kwargs)
+
+        # Criar choices com os outros itens
+        if outros_itens:
+            choices = [
+                (str(item.id), f"Pedido {item.pedido.numero_orcamento} - {item.produto.descricao[:50]} (Qtd: {item.quantidade_solicitada})")
+                for item in outros_itens
+            ]
+            self.fields['outros_pedidos'].choices = choices
+
+
 # Forms que serão implementados nas próximas fases
 # FASE 7: UsuarioForm, EditarUsuarioForm

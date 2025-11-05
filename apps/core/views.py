@@ -9,6 +9,10 @@ from .models import Usuario, LogAuditoria
 from .permissions import (
     login_required_custom,
     administrador_required,
+    separador_required,
+    compradora_required,
+    admin_or_separador,
+    admin_or_compradora,
 )
 
 
@@ -369,6 +373,15 @@ def dashboard(request):
             'total_itens': pedido.itens.count(),
         })
 
+    # Calcular estatísticas de compras (para COMPRADORA e ADMIN)
+    itens_aguardando_compra = 0
+    if request.user.tipo in ['COMPRADORA', 'ADMINISTRADOR']:
+        itens_aguardando_compra = ItemPedido.objects.filter(
+            em_compra=True,
+            compra_realizada=False,
+            pedido__deletado=False
+        ).count()
+
     context = {
         'usuario': request.user,
         'pedidos': pedidos_data,
@@ -377,21 +390,57 @@ def dashboard(request):
             'tempo_medio': formatar_tempo(metricas['tempo_medio_separacao']),
             'pedidos_em_aberto': metricas['pedidos_em_aberto'],
             'total_pedidos_hoje': metricas['total_pedidos_hoje'],
-        }
+        },
+        'itens_aguardando_compra': itens_aguardando_compra,
     }
 
     return render(request, 'dashboard.html', context)
 
 
 @login_required_custom
+@require_http_methods(["GET"])
 def pedido_detalhe_view(request, pedido_id):
     """
-    View de detalhes do pedido (será implementada na FASE 5)
-    Por enquanto, redireciona para dashboard com mensagem
+    View de detalhes do pedido com lista de itens.
+    Mostra status de separação, botões de ação e atualiza em tempo real via WebSocket.
     """
-    pedido = get_object_or_404(Pedido, id=pedido_id)
-    messages.success(request, f'Pedido #{pedido.numero_orcamento} criado com sucesso!')
-    return redirect('dashboard')
+    pedido = get_object_or_404(Pedido, id=pedido_id, deletado=False)
+
+    # Buscar itens do pedido
+    itens = pedido.itens.select_related('produto', 'separado_por', 'marcado_compra_por').all()
+
+    # Calcular estatísticas do pedido
+    total_itens = itens.count()
+    itens_separados = itens.filter(separado=True).count()
+    itens_substituidos = itens.filter(substituido=True).count()
+    itens_em_compra = itens.filter(em_compra=True).count()
+    itens_pendentes = total_itens - itens_separados - itens_substituidos
+
+    progresso_separacao = (itens_separados + itens_substituidos) / total_itens * 100 if total_itens > 0 else 0
+
+    # Verificar se pode finalizar
+    pode_finalizar = pedido.pode_ser_finalizado()
+
+    # Verificar se pode deletar (vendedor que criou ou admin)
+    pode_deletar = (
+        request.user.tipo == 'ADMINISTRADOR' or
+        (request.user.tipo == 'VENDEDOR' and pedido.vendedor == request.user)
+    )
+
+    context = {
+        'pedido': pedido,
+        'itens': itens,
+        'total_itens': total_itens,
+        'itens_separados': itens_separados,
+        'itens_substituidos': itens_substituidos,
+        'itens_em_compra': itens_em_compra,
+        'itens_pendentes': itens_pendentes,
+        'progresso_separacao': round(progresso_separacao, 1),
+        'pode_finalizar': pode_finalizar,
+        'pode_deletar': pode_deletar,
+    }
+
+    return render(request, 'pedido_detalhe.html', context)
 
 
 # =====================
@@ -609,3 +658,735 @@ def confirmar_pedido_view(request):
         'form': form,
         'dados_pdf': dados_pdf
     })
+
+
+# =====================
+# SEPARAÇÃO DE PEDIDOS - FASE 5
+# =====================
+
+from .forms import SubstituirProdutoForm, MarcarCompraForm
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from django.http import JsonResponse
+
+
+@admin_or_separador
+@require_http_methods(["POST"])
+def separar_item_view(request, item_id):
+    """
+    View para marcar um item como separado (tudo-ou-nada).
+    Disponível para SEPARADOR ou ADMINISTRADOR.
+    """
+    item = get_object_or_404(ItemPedido, id=item_id)
+    pedido = item.pedido
+
+    # Verificar se pedido não está deletado
+    if pedido.deletado:
+        return JsonResponse({'success': False, 'error': 'Pedido foi deletado.'}, status=400)
+
+    # Verificar se já está separado
+    if item.separado:
+        return JsonResponse({'success': False, 'error': 'Item já está separado.'}, status=400)
+
+    # Verificar se está substituído
+    if item.substituido:
+        return JsonResponse({'success': False, 'error': 'Item foi substituído.'}, status=400)
+
+    # Verificar se item estava marcado para compra
+    estava_em_compra = item.em_compra
+
+    # Marcar como separado (e remover de compra se estava)
+    item.separado = True
+    item.em_compra = False  # Remove da lista de compras
+    item.separado_por = request.user
+    item.separado_em = timezone.now()
+    item.save()
+
+    # Atualizar status do pedido se necessário
+    if pedido.status == 'PENDENTE':
+        pedido.status = 'EM_SEPARACAO'
+        pedido.save()
+
+    # Auditoria
+    ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='separar_item_direto' if estava_em_compra else 'separar_item',
+        modelo='ItemPedido',
+        objeto_id=item.id,
+        dados_novos={
+            'item_id': item.id,
+            'pedido_id': pedido.id,
+            'produto': item.produto.descricao,
+            'quantidade': str(item.quantidade_solicitada),
+            'estava_em_compra': estava_em_compra
+        },
+        ip=ip,
+        user_agent=user_agent
+    )
+
+    # Broadcast WebSocket para o pedido
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"pedido_{pedido.id}",
+        {
+            "type": "item_separado",
+            "item": {
+                "id": item.id,
+                "separado": True,
+                "separado_por": request.user.nome,
+                "separado_em": item.separado_em.strftime('%d/%m/%Y %H:%M')
+            }
+        }
+    )
+
+    # Broadcast para dashboard (pedido atualizado)
+    async_to_sync(channel_layer.group_send)(
+        "dashboard",
+        {
+            "type": "pedido_atualizado",
+            "pedido": {
+                "id": pedido.id,
+                "numero_orcamento": pedido.numero_orcamento,
+                "status": pedido.status
+            }
+        }
+    )
+
+    # Se estava em compra, broadcast para painel de compras
+    if estava_em_compra:
+        async_to_sync(channel_layer.group_send)(
+            "painel_compras",
+            {
+                "type": "item_separado_direto",
+                "item": {
+                    "id": item.id,
+                    "produto_codigo": item.produto.codigo,
+                    "produto_descricao": item.produto.descricao,
+                    "pedido_id": pedido.id,
+                    "pedido_numero": pedido.numero_orcamento
+                }
+            }
+        )
+
+    return JsonResponse({
+        'success': True,
+        'item_id': item.id,
+        'separado_por': request.user.nome,
+        'separado_em': item.separado_em.strftime('%d/%m/%Y %H:%M'),
+        'pedido_status': pedido.status
+    })
+
+
+@admin_or_compradora
+@require_http_methods(["GET", "POST"])
+def marcar_compra_view(request, item_id):
+    """
+    View para marcar item para compra.
+    Se GET: retorna modal com outros pedidos que têm o mesmo produto.
+    Se POST: marca item(s) para compra.
+    Disponível para COMPRADORA ou ADMINISTRADOR.
+    """
+    item = get_object_or_404(ItemPedido, id=item_id)
+    pedido = item.pedido
+
+    # Verificar se pedido não está deletado
+    if pedido.deletado:
+        return JsonResponse({'success': False, 'error': 'Pedido foi deletado.'}, status=400)
+
+    # Verificar se já está em compra
+    if item.em_compra:
+        return JsonResponse({'success': False, 'error': 'Item já está marcado para compra.'}, status=400)
+
+    # Verificar se já está separado ou substituído
+    if item.separado or item.substituido:
+        return JsonResponse({'success': False, 'error': 'Item já foi separado ou substituído.'}, status=400)
+
+    if request.method == 'GET':
+        # Buscar outros itens com o mesmo produto em pedidos ativos
+        outros_itens = ItemPedido.objects.filter(
+            produto=item.produto,
+            pedido__deletado=False,
+            pedido__status__in=['PENDENTE', 'EM_SEPARACAO', 'AGUARDANDO_COMPRA'],
+            separado=False,
+            substituido=False,
+            em_compra=False
+        ).exclude(id=item.id).select_related('pedido')
+
+        form = MarcarCompraForm(outros_itens=list(outros_itens))
+
+        return JsonResponse({
+            'success': True,
+            'outros_itens': [
+                {
+                    'id': i.id,
+                    'pedido_numero': i.pedido.numero_orcamento,
+                    'quantidade': str(i.quantidade_solicitada)
+                }
+                for i in outros_itens
+            ]
+        })
+
+    # POST: Marcar para compra
+    outros_pedidos_ids = request.POST.getlist('outros_pedidos')
+
+    # Marcar item atual
+    item.em_compra = True
+    item.marcado_compra_por = request.user
+    item.marcado_compra_em = timezone.now()
+    item.save()
+
+    itens_marcados = [item]
+
+    # Marcar outros itens se selecionados
+    if outros_pedidos_ids:
+        outros_itens = ItemPedido.objects.filter(
+            id__in=outros_pedidos_ids,
+            produto=item.produto,
+            pedido__deletado=False,
+            separado=False,
+            substituido=False,
+            em_compra=False
+        )
+
+        for outro_item in outros_itens:
+            outro_item.em_compra = True
+            outro_item.marcado_compra_por = request.user
+            outro_item.marcado_compra_em = timezone.now()
+            outro_item.save()
+            itens_marcados.append(outro_item)
+
+    # Atualizar status do pedido se necessário
+    if pedido.status != 'AGUARDANDO_COMPRA':
+        # Verificar se tem itens aguardando compra
+        if pedido.itens.filter(em_compra=True).exists():
+            pedido.status = 'AGUARDANDO_COMPRA'
+            pedido.save()
+
+    # Auditoria
+    ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='marcar_compra',
+        modelo='ItemPedido',
+        objeto_id=item.id,
+        dados_novos={
+            'item_id': item.id,
+            'pedido_id': pedido.id,
+            'produto': item.produto.descricao,
+            'outros_itens': [i.id for i in itens_marcados[1:]]
+        },
+        ip=ip,
+        user_agent=user_agent
+    )
+
+    # Broadcast WebSocket para cada pedido afetado
+    channel_layer = get_channel_layer()
+    pedidos_afetados = set()
+
+    for i in itens_marcados:
+        pedidos_afetados.add(i.pedido.id)
+        async_to_sync(channel_layer.group_send)(
+            f"pedido_{i.pedido.id}",
+            {
+                "type": "item_em_compra",
+                "item": {
+                    "id": i.id,
+                    "em_compra": True,
+                    "marcado_compra_por": request.user.nome,
+                    "marcado_compra_em": i.marcado_compra_em.strftime('%d/%m/%Y %H:%M')
+                }
+            }
+        )
+
+    # Broadcast para dashboard
+    for pedido_id in pedidos_afetados:
+        p = Pedido.objects.get(id=pedido_id)
+        async_to_sync(channel_layer.group_send)(
+            "dashboard",
+            {
+                "type": "pedido_atualizado",
+                "pedido": {
+                    "id": p.id,
+                    "numero_orcamento": p.numero_orcamento,
+                    "status": p.status
+                }
+            }
+        )
+
+    return JsonResponse({
+        'success': True,
+        'itens_marcados': len(itens_marcados),
+        'pedido_status': pedido.status
+    })
+
+
+@admin_or_separador
+@require_http_methods(["POST"])
+def substituir_item_view(request, item_id):
+    """
+    View para substituir produto em um item.
+    Disponível para SEPARADOR ou ADMINISTRADOR.
+    """
+    item = get_object_or_404(ItemPedido, id=item_id)
+    pedido = item.pedido
+
+    # Verificar se pedido não está deletado
+    if pedido.deletado:
+        return JsonResponse({'success': False, 'error': 'Pedido foi deletado.'}, status=400)
+
+    # Verificar se já está substituído
+    if item.substituido:
+        return JsonResponse({'success': False, 'error': 'Item já foi substituído.'}, status=400)
+
+    # Verificar se já está separado
+    if item.separado:
+        return JsonResponse({'success': False, 'error': 'Item já está separado.'}, status=400)
+
+    form = SubstituirProdutoForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+    # Marcar como substituído
+    item.substituido = True
+    item.produto_substituto = form.cleaned_data['produto_substituto']
+    item.save()
+
+    # Atualizar status do pedido se necessário
+    if pedido.status == 'PENDENTE':
+        pedido.status = 'EM_SEPARACAO'
+        pedido.save()
+
+    # Auditoria
+    ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='substituir_item',
+        modelo='ItemPedido',
+        objeto_id=item.id,
+        dados_novos={
+            'item_id': item.id,
+            'pedido_id': pedido.id,
+            'produto_original': item.produto.descricao,
+            'produto_substituto': item.produto_substituto
+        },
+        ip=ip,
+        user_agent=user_agent
+    )
+
+    # Broadcast WebSocket
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"pedido_{pedido.id}",
+        {
+            "type": "item_substituido",
+            "item": {
+                "id": item.id,
+                "substituido": True,
+                "produto_substituto": item.produto_substituto
+            }
+        }
+    )
+
+    # Broadcast para dashboard
+    async_to_sync(channel_layer.group_send)(
+        "dashboard",
+        {
+            "type": "pedido_atualizado",
+            "pedido": {
+                "id": pedido.id,
+                "numero_orcamento": pedido.numero_orcamento,
+                "status": pedido.status
+            }
+        }
+    )
+
+    return JsonResponse({
+        'success': True,
+        'item_id': item.id,
+        'produto_substituto': item.produto_substituto,
+        'pedido_status': pedido.status
+    })
+
+
+@admin_or_separador
+@require_http_methods(["POST"])
+def finalizar_pedido_view(request, pedido_id):
+    """
+    View para finalizar pedido.
+    Valida se todos itens foram separados ou substituídos e nenhum está em compra.
+    Disponível para SEPARADOR ou ADMINISTRADOR.
+    """
+    pedido = get_object_or_404(Pedido, id=pedido_id, deletado=False)
+
+    # Verificar se pode finalizar
+    if not pedido.pode_ser_finalizado():
+        return JsonResponse({
+            'success': False,
+            'error': 'Pedido não pode ser finalizado. Verifique se todos os itens foram separados/substituídos e nenhum está aguardando compra.'
+        }, status=400)
+
+    # Finalizar pedido
+    pedido.status = 'FINALIZADO'
+    pedido.data_finalizacao = timezone.now()
+    pedido.save()
+
+    # Auditoria
+    ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='finalizar_pedido',
+        modelo='Pedido',
+        objeto_id=pedido.id,
+        dados_novos={
+            'pedido_id': pedido.id,
+            'numero_orcamento': pedido.numero_orcamento,
+            'data_finalizacao': pedido.data_finalizacao.isoformat()
+        },
+        ip=ip,
+        user_agent=user_agent
+    )
+
+    # Broadcast WebSocket
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"pedido_{pedido.id}",
+        {
+            "type": "pedido_finalizado",
+            "pedido_id": pedido.id
+        }
+    )
+
+    # Broadcast para dashboard
+    async_to_sync(channel_layer.group_send)(
+        "dashboard",
+        {
+            "type": "pedido_finalizado",
+            "pedido_id": pedido.id,
+            "numero_orcamento": pedido.numero_orcamento
+        }
+    )
+
+    return JsonResponse({
+        'success': True,
+        'pedido_id': pedido.id,
+        'redirect_url': '/dashboard/'
+    })
+
+
+@login_required_custom
+@require_http_methods(["POST"])
+def deletar_pedido_view(request, pedido_id):
+    """
+    View para fazer soft delete de pedido.
+    Disponível para VENDEDOR que criou o pedido ou ADMINISTRADOR.
+    """
+    pedido = get_object_or_404(Pedido, id=pedido_id, deletado=False)
+
+    # Verificar permissão
+    if request.user.tipo == 'ADMINISTRADOR':
+        pode_deletar = True
+    elif request.user.tipo == 'VENDEDOR' and pedido.vendedor == request.user:
+        pode_deletar = True
+    else:
+        pode_deletar = False
+
+    if not pode_deletar:
+        return JsonResponse({
+            'success': False,
+            'error': 'Você não tem permissão para deletar este pedido.'
+        }, status=403)
+
+    # Soft delete
+    pedido.deletado = True
+    pedido.deletado_por = request.user
+    pedido.deletado_em = timezone.now()
+    pedido.save()
+
+    # Auditoria
+    ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='deletar_pedido',
+        modelo='Pedido',
+        objeto_id=pedido.id,
+        dados_novos={
+            'pedido_id': pedido.id,
+            'numero_orcamento': pedido.numero_orcamento,
+            'deletado_em': pedido.deletado_em.isoformat()
+        },
+        ip=ip,
+        user_agent=user_agent
+    )
+
+    # Broadcast WebSocket
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"pedido_{pedido.id}",
+        {
+            "type": "pedido_deletado",
+            "pedido_id": pedido.id
+        }
+    )
+
+    # Broadcast para dashboard (remove da lista)
+    async_to_sync(channel_layer.group_send)(
+        "dashboard",
+        {
+            "type": "pedido_finalizado",  # Usa o mesmo evento para remover da lista
+            "pedido_id": pedido.id,
+            "numero_orcamento": pedido.numero_orcamento
+        }
+    )
+
+    return JsonResponse({
+        'success': True,
+        'pedido_id': pedido.id,
+        'redirect_url': '/dashboard/'
+    })
+
+
+# =====================
+# PAINEL DE COMPRAS - FASE 6
+# =====================
+
+from django.db.models import Sum, Count, Q
+from django.core.paginator import Paginator
+from datetime import datetime, timedelta
+
+
+@admin_or_compradora
+@require_http_methods(["GET"])
+def painel_compras_view(request):
+    """
+    Painel de compras - lista itens marcados para compra agrupados por produto.
+    Disponível para COMPRADORA ou ADMINISTRADOR.
+    """
+    # Filtros
+    search_text = request.GET.get('search', '').strip()
+    order_filter = request.GET.get('order', '').strip()
+
+    # Query base: itens em compra (não comprados ainda) em pedidos ativos
+    query = ItemPedido.objects.filter(
+        em_compra=True,
+        compra_realizada=False,
+        pedido__deletado=False
+    ).select_related('produto', 'pedido', 'marcado_compra_por')
+
+    # Aplicar filtros
+    if search_text:
+        query = query.filter(
+            Q(produto__codigo__icontains=search_text) |
+            Q(produto__descricao__icontains=search_text)
+        )
+
+    if order_filter:
+        query = query.filter(pedido__numero_orcamento__icontains=order_filter)
+
+    # Agrupar por produto
+    produtos_agrupados = {}
+
+    for item in query:
+        codigo = item.produto.codigo
+
+        if codigo not in produtos_agrupados:
+            produtos_agrupados[codigo] = {
+                'codigo': codigo,
+                'descricao': item.produto.descricao,
+                'quantidade_total': 0,
+                'itens': []
+            }
+
+        produtos_agrupados[codigo]['quantidade_total'] += item.quantidade_solicitada
+        produtos_agrupados[codigo]['itens'].append({
+            'id': item.id,
+            'pedido_id': item.pedido.id,
+            'pedido_numero': item.pedido.numero_orcamento,
+            'quantidade': item.quantidade_solicitada,
+            'marcado_por': item.marcado_compra_por.nome if item.marcado_compra_por else 'N/A',
+            'marcado_em': item.marcado_compra_em.strftime('%d/%m/%Y %H:%M') if item.marcado_compra_em else 'N/A'
+        })
+
+    # Converter para lista e ordenar por código
+    produtos_lista = sorted(produtos_agrupados.values(), key=lambda x: x['codigo'])
+
+    # Calcular estatísticas
+    total_produtos = len(produtos_lista)
+    total_itens = query.count()
+    total_quantidade = sum(p['quantidade_total'] for p in produtos_lista)
+
+    import json
+    from django.core.serializers.json import DjangoJSONEncoder
+
+    context = {
+        'produtos': produtos_lista,
+        'produtos_json': json.dumps(produtos_lista, cls=DjangoJSONEncoder),
+        'total_produtos': total_produtos,
+        'total_itens': total_itens,
+        'total_quantidade': total_quantidade,
+        'search_text': search_text,
+        'order_filter': order_filter,
+    }
+
+    return render(request, 'painel_compras.html', context)
+
+
+@admin_or_compradora
+@require_http_methods(["POST"])
+def confirmar_compra_view(request, produto_codigo):
+    """
+    Confirma compra de todos os itens de um produto específico.
+    Marca compra_realizada=True para todos itens do produto.
+    Disponível para COMPRADORA ou ADMINISTRADOR.
+    """
+    # Buscar todos os itens do produto que estão em compra
+    itens = ItemPedido.objects.filter(
+        produto__codigo=produto_codigo,
+        em_compra=True,
+        compra_realizada=False,
+        pedido__deletado=False
+    ).select_related('produto', 'pedido')
+
+    if not itens.exists():
+        return JsonResponse({
+            'success': False,
+            'error': 'Nenhum item encontrado para este produto.'
+        }, status=404)
+
+    # Contar itens antes de atualizar
+    total_itens = itens.count()
+    produto_descricao = itens.first().produto.descricao
+
+    # Atualizar todos os itens
+    now = timezone.now()
+    pedidos_afetados = set()
+
+    for item in itens:
+        item.compra_realizada = True
+        item.compra_realizada_por = request.user
+        item.compra_realizada_em = now
+        item.save()
+        pedidos_afetados.add(item.pedido.id)
+
+    # Auditoria
+    ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='confirmar_compra',
+        modelo='ItemPedido',
+        objeto_id=0,
+        dados_novos={
+            'produto_codigo': produto_codigo,
+            'produto_descricao': produto_descricao,
+            'total_itens': total_itens,
+            'pedidos_afetados': list(pedidos_afetados)
+        },
+        ip=ip,
+        user_agent=user_agent
+    )
+
+    # Broadcast WebSocket para painel de compras
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        "painel_compras",
+        {
+            "type": "compra_confirmada",
+            "produto": {
+                "codigo": produto_codigo,
+                "descricao": produto_descricao,
+                "total_itens": total_itens
+            }
+        }
+    )
+
+    # Broadcast para cada pedido afetado
+    for pedido_id in pedidos_afetados:
+        async_to_sync(channel_layer.group_send)(
+            f"pedido_{pedido_id}",
+            {
+                "type": "compra_realizada",
+                "produto_codigo": produto_codigo
+            }
+        )
+
+    # Broadcast para dashboard
+    async_to_sync(channel_layer.group_send)(
+        "dashboard",
+        {
+            "type": "compra_confirmada",
+            "produto_codigo": produto_codigo
+        }
+    )
+
+    return JsonResponse({
+        'success': True,
+        'produto_codigo': produto_codigo,
+        'total_itens': total_itens
+    })
+
+
+@admin_or_compradora
+@require_http_methods(["GET"])
+def historico_compras_view(request):
+    """
+    Histórico de compras realizadas nos últimos 90 dias.
+    Disponível para COMPRADORA ou ADMINISTRADOR.
+    """
+    # Data limite: 90 dias atrás
+    data_limite = timezone.now() - timedelta(days=90)
+
+    # Buscar itens com compra realizada nos últimos 90 dias
+    query = ItemPedido.objects.filter(
+        compra_realizada=True,
+        compra_realizada_em__gte=data_limite
+    ).select_related('produto', 'pedido', 'compra_realizada_por').order_by('-compra_realizada_em')
+
+    # Agrupar por produto e data de compra
+    compras_agrupadas = {}
+
+    for item in query:
+        # Chave: produto_codigo + data (apenas dia)
+        data_compra = item.compra_realizada_em.date()
+        chave = f"{item.produto.codigo}_{data_compra}"
+
+        if chave not in compras_agrupadas:
+            compras_agrupadas[chave] = {
+                'produto_codigo': item.produto.codigo,
+                'produto_descricao': item.produto.descricao,
+                'data_compra': item.compra_realizada_em,
+                'comprado_por': item.compra_realizada_por.nome if item.compra_realizada_por else 'N/A',
+                'quantidade_total': 0,
+                'pedidos': []
+            }
+
+        compras_agrupadas[chave]['quantidade_total'] += item.quantidade_solicitada
+        compras_agrupadas[chave]['pedidos'].append({
+            'numero': item.pedido.numero_orcamento,
+            'quantidade': item.quantidade_solicitada
+        })
+
+    # Converter para lista e ordenar por data (mais recente primeiro)
+    historico_lista = sorted(
+        compras_agrupadas.values(),
+        key=lambda x: x['data_compra'],
+        reverse=True
+    )
+
+    # Paginação (20 por página)
+    paginator = Paginator(historico_lista, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'total_compras': len(historico_lista),
+    }
+
+    return render(request, 'historico_compras.html', context)

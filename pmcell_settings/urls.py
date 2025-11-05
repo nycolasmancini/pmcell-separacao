@@ -25,6 +25,14 @@ from apps.core.views import (
     upload_pdf_view,
     confirmar_pedido_view,
     pedido_detalhe_view,
+    separar_item_view,
+    marcar_compra_view,
+    substituir_item_view,
+    finalizar_pedido_view,
+    deletar_pedido_view,
+    painel_compras_view,
+    confirmar_compra_view,
+    historico_compras_view,
 )
 
 urlpatterns = [
@@ -42,6 +50,18 @@ urlpatterns = [
     path('pedidos/upload-pdf/', upload_pdf_view, name='upload_pdf'),
     path('pedidos/confirmar/', confirmar_pedido_view, name='confirmar_pedido'),
     path('pedidos/<int:pedido_id>/', pedido_detalhe_view, name='pedido_detalhe'),
+
+    # Ações de Separação (FASE 5)
+    path('pedidos/item/<int:item_id>/separar/', separar_item_view, name='separar_item'),
+    path('pedidos/item/<int:item_id>/marcar-compra/', marcar_compra_view, name='marcar_compra'),
+    path('pedidos/item/<int:item_id>/substituir/', substituir_item_view, name='substituir_item'),
+    path('pedidos/<int:pedido_id>/finalizar/', finalizar_pedido_view, name='finalizar_pedido'),
+    path('pedidos/<int:pedido_id>/deletar/', deletar_pedido_view, name='deletar_pedido'),
+
+    # Painel de Compras (FASE 6)
+    path('painel-compras/', painel_compras_view, name='painel_compras'),
+    path('painel-compras/confirmar/<str:produto_codigo>/', confirmar_compra_view, name='confirmar_compra'),
+    path('painel-compras/historico/', historico_compras_view, name='historico_compras'),
 
     # Admin - Reset PIN
     path('admin/reset-pin/<int:user_id>/', reset_pin_view, name='reset_pin'),

@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.cache import never_cache
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 import copy
 from .models import Usuario, LogAuditoria, Pedido, ItemPedido, Produto
 from .forms import (
@@ -562,10 +562,11 @@ def confirmar_pedido_view(request):
     # Session data permanece como strings (JSON serializável)
     dados_pdf_template = copy.deepcopy(dados_pdf)
 
-    # Converter valores de string para Decimal APENAS na cópia para template
+    # Converter valores de string para float para uso no template e JavaScript
+    # (float é JSON serializável e compatível com JavaScript)
     for produto in dados_pdf_template['produtos']:
-        produto['quantidade'] = Decimal(produto['quantidade'])
-        produto['preco_unitario'] = Decimal(produto['preco_unitario'])
+        produto['quantidade'] = float(produto['quantidade'])
+        produto['preco_unitario'] = float(produto['preco_unitario'])
 
     if request.method == 'POST':
         form = ConfirmarPedidoForm(request.POST)
@@ -573,13 +574,17 @@ def confirmar_pedido_view(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
+                    # Converter data de ISO string para date object
+                    data_str = dados_pdf['data']
+                    data_obj = datetime.fromisoformat(data_str).date() if isinstance(data_str, str) else data_str
+
                     # Criar pedido
                     pedido = Pedido.objects.create(
                         numero_orcamento=dados_pdf['numero_orcamento'],
                         codigo_cliente=dados_pdf['codigo_cliente'],
                         nome_cliente=dados_pdf['nome_cliente'],
                         vendedor=request.user,
-                        data=dados_pdf['data'],
+                        data=data_obj,
                         logistica=form.cleaned_data['logistica'],
                         embalagem=form.cleaned_data['embalagem'],
                         observacoes=form.cleaned_data.get('observacoes', ''),
@@ -633,6 +638,10 @@ def confirmar_pedido_view(request):
 
                     channel_layer = get_channel_layer()
                     if channel_layer:
+                        # Garantir formatação de data (pedido.data já é date object após save)
+                        data_formatada = pedido.data.strftime('%d/%m/%Y') if hasattr(pedido.data, 'strftime') else str(pedido.data)
+                        data_criacao_formatada = pedido.data_criacao.strftime('%d/%m/%Y %H:%M') if hasattr(pedido.data_criacao, 'strftime') else str(pedido.data_criacao)
+
                         async_to_sync(channel_layer.group_send)(
                             "dashboard",
                             {
@@ -645,8 +654,8 @@ def confirmar_pedido_view(request):
                                     "vendedor_id": pedido.vendedor.id,
                                     "status": pedido.status,
                                     "status_display": pedido.get_status_display(),
-                                    "data": pedido.data.strftime('%d/%m/%Y'),
-                                    "data_criacao": pedido.data_criacao.strftime('%d/%m/%Y %H:%M'),
+                                    "data": data_formatada,
+                                    "data_criacao": data_criacao_formatada,
                                     "total_itens": pedido.itens.count(),
                                 }
                             }

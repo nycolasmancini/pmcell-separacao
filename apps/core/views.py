@@ -827,7 +827,9 @@ def separar_item_view(request, item_id):
     })
 
 
+@login_required_custom
 @require_http_methods(["POST"])
+@transaction.atomic()
 def unseparar_item_view(request, item_id):
     """
     View para desseparar um item (reverter separação).
@@ -1106,10 +1108,13 @@ def substituir_item_view(request, item_id):
     if not form.is_valid():
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-    # Marcar como substituído
+    # Marcar como substituído E como separado (item substituído conta como separado)
     item.substituido = True
     item.produto_substituto = form.cleaned_data['produto_substituto']
-    item.save()
+    item.separado = True
+    item.separado_por = request.user
+    item.separado_em = timezone.now()
+    item.save(update_fields=['substituido', 'produto_substituto', 'separado', 'separado_por', 'separado_em'])
 
     # Atualizar status do pedido se necessário
     if pedido.status == 'PENDENTE':

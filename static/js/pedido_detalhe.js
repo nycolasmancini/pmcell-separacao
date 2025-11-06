@@ -60,6 +60,10 @@ class PedidoDetalheWebSocket {
                     this.handleItemSeparado(data.item);
                     break;
 
+                case 'item_unseparado':
+                    this.handleItemUnseparado(data.item);
+                    break;
+
                 case 'item_em_compra':
                     this.handleItemEmCompra(data.item);
                     break;
@@ -139,19 +143,46 @@ class PedidoDetalheWebSocket {
     }
 
     updateStatistics() {
-        // Update statistics cards dynamically
-        const separatedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
-        const separatedCount = separatedCheckboxes.length;
-        const totalItems = document.querySelectorAll('.item-checkbox').length;
-        const progress = totalItems > 0 ? Math.round((separatedCount / totalItems) * 100) : 0;
+        // Contar todos os itens por status badge (mais preciso que contar checkboxes)
+        const allItems = document.querySelectorAll('tr[data-item-id]').length;
 
-        // Update "Separados" count
+        // Contar por cada tipo de status
+        const separadosVerdes = document.querySelectorAll('.status-badge.bg-green-100').length; // ✓ Separado
+        const substituidosAzuis = document.querySelectorAll('.status-badge.bg-blue-100').length; // ↔ Substituído
+        const emCompraAmarelos = document.querySelectorAll('.status-badge.bg-yellow-100').length; // 🛒 Em Compra
+        const pendentesCinza = document.querySelectorAll('.status-badge.bg-gray-100').length; // ⏳ Pendente
+
+        // Itens separados = Separados (verde) + Substituídos (azul) - ambos contam como "completos"
+        const totalSeparados = separadosVerdes + substituidosAzuis;
+
+        // Calcular progresso: (separados + substituídos) / total
+        const progress = allItems > 0 ? Math.round((totalSeparados / allItems) * 100) : 0;
+
+        // Atualizar card "Separados" (verde - inclui normais + substituídos)
         const separadosElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-green-600');
         if (separadosElement) {
-            separadosElement.textContent = separatedCount;
+            separadosElement.textContent = totalSeparados;
         }
 
-        // Update progress bar
+        // Atualizar card "Substituídos" (azul)
+        const substituidosElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-blue-600');
+        if (substituidosElement) {
+            substituidosElement.textContent = substituidosAzuis;
+        }
+
+        // Atualizar card "Em Compra" (amarelo)
+        const emCompraElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-yellow-600');
+        if (emCompraElement) {
+            emCompraElement.textContent = emCompraAmarelos;
+        }
+
+        // Atualizar card "Pendentes" (cinza)
+        const pendentesElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-gray-600');
+        if (pendentesElement) {
+            pendentesElement.textContent = pendentesCinza;
+        }
+
+        // Atualizar barra de progresso
         const progressBar = document.querySelector('.bg-green-600.h-2.rounded-full');
         const progressText = document.querySelector('.text-sm.font-bold.text-gray-800');
         if (progressBar) {
@@ -160,6 +191,8 @@ class PedidoDetalheWebSocket {
         if (progressText) {
             progressText.textContent = `${progress}%`;
         }
+
+        console.log(`[Statistics] Separados: ${separadosVerdes}, Substituídos: ${substituidosAzuis}, Em Compra: ${emCompraAmarelos}, Pendentes: ${pendentesCinza}, Total Completos: ${totalSeparados}/${allItems} (${progress}%)`);
     }
 
     handleItemEmCompra(item) {
@@ -185,12 +218,8 @@ class PedidoDetalheWebSocket {
                 }
             }
 
-            // Update "Em Compra" statistics
-            const emCompraCount = document.querySelectorAll('.status-badge.bg-yellow-100').length;
-            const emCompraElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-yellow-600');
-            if (emCompraElement) {
-                emCompraElement.textContent = emCompraCount;
-            }
+            // Atualizar todas as estatísticas
+            this.updateStatistics();
         }
     }
 
@@ -199,6 +228,15 @@ class PedidoDetalheWebSocket {
 
         const row = document.querySelector(`tr[data-item-id="${item.id}"]`);
         if (row) {
+            // Marcar checkbox como checked (item substituído conta como separado)
+            const checkbox = row.querySelector('.item-checkbox');
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+
+            // Adicionar classe de item separado
+            row.classList.add('row-separated');
+
             // Atualizar descrição do produto
             const produtoCell = row.querySelector('td:nth-child(2)');
             if (produtoCell) {
@@ -225,12 +263,49 @@ class PedidoDetalheWebSocket {
                 }
             }
 
-            // Update "Substituídos" statistics
-            const substituidosCount = document.querySelectorAll('.status-badge.bg-blue-100').length;
-            const substituidosElement = document.querySelector('.bg-white.rounded-lg.shadow.p-4.text-center .text-2xl.font-bold.text-blue-600');
-            if (substituidosElement) {
-                substituidosElement.textContent = substituidosCount;
+            // Atualizar todas as estatísticas
+            this.updateStatistics();
+        }
+    }
+
+    handleItemUnseparado(item) {
+        console.log('[WebSocket] Item desseparado:', item);
+
+        const row = document.querySelector(`tr[data-item-id="${item.id}"]`);
+        if (row) {
+            // Desmarcar checkbox
+            const checkbox = row.querySelector('.item-checkbox');
+            if (checkbox) {
+                checkbox.checked = false;
             }
+
+            // Remover classe de item separado
+            row.classList.remove('row-separated');
+
+            // Remover strikethrough da descrição
+            const descDiv = row.querySelector('.item-description');
+            if (descDiv) {
+                descDiv.classList.remove('line-through');
+            }
+
+            // Atualizar status badge para Pendente
+            const statusCell = row.querySelector('td:nth-child(5)');
+            if (statusCell) {
+                const statusBadge = statusCell.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800';
+                    statusBadge.innerHTML = `<span class="status-text">⏳ Pendente</span>`;
+                }
+            }
+
+            // Remover de itemsSeparados array se presente
+            const index = this.itemsSeparados.indexOf(item.id);
+            if (index > -1) {
+                this.itemsSeparados.splice(index, 1);
+            }
+
+            // Atualizar todas as estatísticas
+            this.updateStatistics();
         }
     }
 

@@ -84,12 +84,29 @@ ASGI_APPLICATION = 'pmcell_settings.asgi.application'
 AUTH_USER_MODEL = 'core.Usuario'
 
 # Django Channels
-CHANNEL_LAYERS = {
-    'default': {
-        # Usar InMemoryChannelLayer (ideal para Railway free tier)
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+# WebSocket Channel Layers Configuration
+# Use Redis if available (production/Railway with Redis addon), fallback to InMemory (local dev)
+if 'RAILWAY_ENVIRONMENT' in os.environ and config('REDIS_URL', default=None):
+    # Production with Redis (multiple workers support)
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [config('REDIS_URL')],
+                'capacity': 1500,  # Max messages per channel
+                'expiry': 10,  # Message expiry (seconds)
+            },
+        }
     }
-}
+    print("[CHANNEL_LAYERS] Using Redis for WebSocket (Production)")
+else:
+    # Development or Railway without Redis
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
+    print("[CHANNEL_LAYERS] Using InMemory for WebSocket (Development/Single Worker)")
 
 
 # Database

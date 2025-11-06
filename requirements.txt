@@ -8,6 +8,7 @@ psycopg2-binary==2.9.9
 
 # Django Channels para WebSocket
 channels==4.0.0
+channels-redis==4.1.0  # For production WebSocket with Redis backend
 
 # PDF Processing
 pdfplumber==0.10.3

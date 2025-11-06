@@ -197,29 +197,44 @@ class PedidoDetalheWebSocket {
 
     handleItemEmCompra(item) {
         console.log('[WebSocket] Item em compra:', item);
+        console.log('[DEBUG] Procurando linha com item ID:', item.id);
 
         const row = document.querySelector(`tr[data-item-id="${item.id}"]`);
+        console.log('[DEBUG] Linha encontrada:', row ? 'Sim' : 'Não');
+
         if (row) {
             const statusCell = row.querySelector('td:nth-child(5)');
+            console.log('[DEBUG] Status cell encontrada:', statusCell ? 'Sim' : 'Não');
+
             if (statusCell) {
                 const statusBadge = statusCell.querySelector('.status-badge');
+                console.log('[DEBUG] Status badge encontrado:', statusBadge ? 'Sim' : 'Não');
+
                 if (statusBadge) {
                     statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800';
                     statusBadge.innerHTML = `<span class="status-text">🛒 Em Compra</span>`;
+                    console.log('[DEBUG] Status badge atualizado com sucesso');
                 }
 
                 // Add timestamp if not exists
                 const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
+                console.log('[DEBUG] Timestamp existente:', existingTimestamp ? 'Sim' : 'Não');
+
                 if (!existingTimestamp) {
                     const timestampDiv = document.createElement('div');
                     timestampDiv.className = 'text-xs text-gray-500 mt-1';
                     timestampDiv.textContent = `${item.marcado_compra_por} - ${item.marcado_compra_em}`;
                     statusCell.appendChild(timestampDiv);
+                    console.log('[DEBUG] Timestamp adicionado:', timestampDiv.textContent);
                 }
             }
 
             // Atualizar todas as estatísticas
+            console.log('[DEBUG] Atualizando estatísticas...');
             this.updateStatistics();
+            console.log('[DEBUG] Item em compra processado com sucesso');
+        } else {
+            console.error('[DEBUG] Linha não encontrada para item ID:', item.id);
         }
     }
 

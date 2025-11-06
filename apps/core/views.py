@@ -1152,7 +1152,10 @@ def substituir_item_view(request, item_id):
             "item": {
                 "id": item.id,
                 "substituido": True,
-                "produto_substituto": item.produto_substituto
+                "produto_substituto": item.produto_substituto,
+                "separado": True,
+                "separado_por": request.user.nome,
+                "separado_em": item.separado_em.strftime('%d/%m/%Y %H:%M') if item.separado_em else None
             }
         }
     )

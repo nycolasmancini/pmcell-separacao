@@ -198,6 +198,13 @@ class PedidoDetalheConsumer(AsyncWebsocketConsumer):
             'produto_codigo': event['produto_codigo']
         }))
 
+    async def item_unseparado(self, event):
+        """Handler chamado quando um item é desseparado"""
+        await self.send(text_data=json.dumps({
+            'type': 'item_unseparado',
+            'item': event['item']
+        }))
+
 
 # FASE 6: PainelComprasConsumer
 

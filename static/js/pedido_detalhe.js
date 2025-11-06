@@ -689,6 +689,9 @@ function pedidoDetalheApp(pedidoId) {
     };
 }
 
+// Make pedidoDetalheApp globally available for Alpine.js
+window.pedidoDetalheApp = pedidoDetalheApp;
+
 // Limpar WebSocket ao sair da página
 window.addEventListener('beforeunload', () => {
     if (window.pedidoWs) {

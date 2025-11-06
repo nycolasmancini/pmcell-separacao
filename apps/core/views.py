@@ -709,7 +709,9 @@ def separar_item_view(request, item_id):
     View para marcar um item como separado (tudo-ou-nada).
     Disponível para qualquer usuário autenticado.
     """
-    logger.info(f"[SEPARAR ITEM] Requisição recebida - Item ID: {item_id}, User: {request.user.nome}")
+    # Safe user access - avoid AttributeError if user is AnonymousUser
+    username = getattr(request.user, 'nome', 'anonymous') if hasattr(request.user, 'is_authenticated') and request.user.is_authenticated else 'anonymous'
+    logger.info(f"[SEPARAR ITEM] Requisição recebida - Item ID: {item_id}, User: {username}")
 
     try:
         item = get_object_or_404(ItemPedido, id=item_id)
@@ -741,7 +743,7 @@ def separar_item_view(request, item_id):
         item.separado_por = request.user
         item.separado_em = timezone.now()
 
-        logger.info(f"[SEPARAR ITEM] Salvando item - ID: {item.id}, separado=True, user={request.user.nome}")
+        logger.info(f"[SEPARAR ITEM] Salvando item - ID: {item.id}, separado=True, user={username}")
         item.save(update_fields=['separado', 'em_compra', 'separado_por', 'separado_em'])
         logger.info(f"[SEPARAR ITEM] ✓ Item salvo com sucesso - ID: {item.id}")
 
@@ -836,7 +838,9 @@ def unseparar_item_view(request, item_id):
     Remove marcação de separação e retorna item ao estado Pendente.
     IMPORTANTE: Não permite desseparar itens substituídos.
     """
-    logger.info(f"[UNSEPARAR ITEM] Requisição recebida - Item ID: {item_id}, User: {request.user.nome}")
+    # Safe user access - avoid AttributeError if user is AnonymousUser
+    username = getattr(request.user, 'nome', 'anonymous') if hasattr(request.user, 'is_authenticated') and request.user.is_authenticated else 'anonymous'
+    logger.info(f"[UNSEPARAR ITEM] Requisição recebida - Item ID: {item_id}, User: {username}")
 
     try:
         item = get_object_or_404(ItemPedido, id=item_id)

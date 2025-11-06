@@ -1,5 +1,6 @@
 """
 Django settings for pmcell_settings project.
+Version: 1.0.1 - Force redeploy with Redis configuration
 """
 
 from pathlib import Path

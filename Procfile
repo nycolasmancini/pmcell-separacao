@@ -1,1 +1,1 @@
-web: python manage.py migrate && python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p $PORT pmcell_settings.asgi:application
+web: set -e && python manage.py collectstatic --noinput --clear --verbosity 2 && python manage.py migrate && daphne -b 0.0.0.0 -p $PORT pmcell_settings.asgi:application

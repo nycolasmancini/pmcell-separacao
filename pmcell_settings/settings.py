@@ -18,13 +18,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-ew)xqc30our7zgh0%)0y%o--=@er3+huwd4w=%j_t-2x_gts3e')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
 
 # Railway specific
 if 'RAILWAY_ENVIRONMENT' in os.environ:
     ALLOWED_HOSTS = ['*']
+    DEBUG = False  # Force DEBUG=False in Railway production
 
 # Application definition
 INSTALLED_APPS = [
@@ -145,7 +146,9 @@ STATICFILES_DIRS = [
 ]
 
 # WhiteNoise settings
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Using CompressedStaticFilesStorage instead of CompressedManifestStaticFilesStorage
+# to avoid 404 errors when manifest build is incomplete in Railway
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

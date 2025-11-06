@@ -1,0 +1,19 @@
+# Nixpacks configuration for Railway deployment
+# https://nixpacks.com/docs/configuration/file
+
+[phases.setup]
+nixPkgs = ["python39", "postgresql"]
+
+[phases.install]
+cmds = [
+    "pip install --upgrade pip",
+    "pip install -r requirements.txt"
+]
+
+[phases.build]
+cmds = [
+    "python manage.py collectstatic --noinput --clear --verbosity 2"
+]
+
+[start]
+cmd = "python manage.py migrate && daphne -b 0.0.0.0 -p $PORT pmcell_settings.asgi:application"

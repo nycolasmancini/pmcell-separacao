@@ -87,27 +87,43 @@ AUTH_USER_MODEL = 'core.Usuario'
 # Django Channels
 # WebSocket Channel Layers Configuration
 # Use Redis if available (production/Railway with Redis addon), fallback to InMemory (local dev)
-if 'RAILWAY_ENVIRONMENT' in os.environ and config('REDIS_URL', default=None):
+redis_url = config('REDIS_URL', default=None)
+
+if 'RAILWAY_ENVIRONMENT' in os.environ and redis_url:
     # Production with Redis (multiple workers support)
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                'hosts': [config('REDIS_URL')],
-                'capacity': 1500,  # Max messages per channel
-                'expiry': 10,  # Message expiry (seconds)
-            },
+    print(f"[CHANNEL_LAYERS] Redis URL detectado: {redis_url[:20]}...{redis_url[-20:]}")
+    try:
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels_redis.core.RedisChannelLayer',
+                'CONFIG': {
+                    'hosts': [redis_url],
+                    'capacity': 1500,  # Max messages per channel
+                    'expiry': 10,  # Message expiry (seconds)
+                },
+            }
         }
-    }
-    print("[CHANNEL_LAYERS] Using Redis for WebSocket (Production)")
+        print("[CHANNEL_LAYERS] ✅ Using Redis for WebSocket (Production)")
+        print("[CHANNEL_LAYERS] Backend: channels_redis.core.RedisChannelLayer")
+    except Exception as e:
+        print(f"[CHANNEL_LAYERS] ❌ ERRO ao configurar Redis: {e}")
+        print("[CHANNEL_LAYERS] Fallback para InMemory")
+        CHANNEL_LAYERS = {
+            'default': {
+                'BACKEND': 'channels.layers.InMemoryChannelLayer',
+            }
+        }
 else:
     # Development or Railway without Redis
+    if 'RAILWAY_ENVIRONMENT' in os.environ:
+        print("[CHANNEL_LAYERS] ⚠️  AVISO: Railway detectado mas REDIS_URL não configurado!")
+        print("[CHANNEL_LAYERS] WebSockets podem não funcionar com múltiplos workers")
+    print("[CHANNEL_LAYERS] Using InMemory for WebSocket (Development/Single Worker)")
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels.layers.InMemoryChannelLayer',
         }
     }
-    print("[CHANNEL_LAYERS] Using InMemory for WebSocket (Development/Single Worker)")
 
 
 # Database

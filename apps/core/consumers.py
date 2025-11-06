@@ -18,17 +18,21 @@ class DashboardConsumer(AsyncWebsocketConsumer):
         """Aceita conexão WebSocket e adiciona ao group 'dashboard'"""
         self.group_name = 'dashboard'
 
-        # Adicionar ao group
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
-
-        # Aceitar conexão
+        # IMPORTANTE: Aceitar conexão ANTES de acessar channel_layer
+        # Isso evita erro 1006 se channel_layer falhar
         await self.accept()
-
-        # Log de conexão (opcional)
         print(f"[WebSocket] Cliente conectado ao dashboard: {self.channel_name}")
+
+        # Adicionar ao group (com error handling)
+        try:
+            await self.channel_layer.group_add(
+                self.group_name,
+                self.channel_name
+            )
+            print(f"[WebSocket] Cliente adicionado ao group '{self.group_name}'")
+        except Exception as e:
+            print(f"[WebSocket] ERRO ao adicionar ao group: {e}")
+            # Conexão já foi aceita, continuar sem group (funciona localmente)
 
     async def disconnect(self, close_code):
         """Remove da group ao desconectar"""
@@ -109,16 +113,21 @@ class PedidoDetalheConsumer(AsyncWebsocketConsumer):
         self.pedido_id = self.scope['url_route']['kwargs']['pedido_id']
         self.group_name = f'pedido_{self.pedido_id}'
 
-        # Adicionar ao group
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
-
-        # Aceitar conexão
+        # IMPORTANTE: Aceitar conexão ANTES de acessar channel_layer
+        # Isso evita erro 1006 se channel_layer falhar
         await self.accept()
-
         print(f"[WebSocket] Cliente conectado ao pedido {self.pedido_id}: {self.channel_name}")
+
+        # Adicionar ao group (com error handling)
+        try:
+            await self.channel_layer.group_add(
+                self.group_name,
+                self.channel_name
+            )
+            print(f"[WebSocket] Cliente adicionado ao group '{self.group_name}'")
+        except Exception as e:
+            print(f"[WebSocket] ERRO ao adicionar ao group '{self.group_name}': {e}")
+            # Conexão já foi aceita, continuar sem group (funciona localmente)
 
     async def disconnect(self, close_code):
         """Remove do group ao desconectar"""
@@ -222,16 +231,21 @@ class PainelComprasConsumer(AsyncWebsocketConsumer):
         """Aceita conexão WebSocket e adiciona ao group 'painel_compras'"""
         self.group_name = 'painel_compras'
 
-        # Adicionar ao group
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
-
-        # Aceitar conexão
+        # IMPORTANTE: Aceitar conexão ANTES de acessar channel_layer
+        # Isso evita erro 1006 se channel_layer falhar
         await self.accept()
-
         print(f"[WebSocket] Cliente conectado ao painel de compras: {self.channel_name}")
+
+        # Adicionar ao group (com error handling)
+        try:
+            await self.channel_layer.group_add(
+                self.group_name,
+                self.channel_name
+            )
+            print(f"[WebSocket] Cliente adicionado ao group '{self.group_name}'")
+        except Exception as e:
+            print(f"[WebSocket] ERRO ao adicionar ao group: {e}")
+            # Conexão já foi aceita, continuar sem group (funciona localmente)
 
     async def disconnect(self, close_code):
         """Remove do group ao desconectar"""

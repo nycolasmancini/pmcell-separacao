@@ -1,1 +1,1 @@
-web: set -e && python manage.py collectstatic --noinput --clear --verbosity 2 && python manage.py migrate && daphne -b 0.0.0.0 -p $PORT --verbosity 2 --access-log - --proxy-headers pmcell_settings.asgi:application
+web: set -e && python manage.py collectstatic --noinput --clear --verbosity 2 && python manage.py migrate && daphne -b 0.0.0.0 -p $PORT --verbosity 3 --access-log - --proxy-headers pmcell_settings.asgi:application

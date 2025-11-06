@@ -827,6 +827,114 @@ def separar_item_view(request, item_id):
     })
 
 
+@require_http_methods(["POST"])
+def unseparar_item_view(request, item_id):
+    """
+    View para desseparar um item (reverter separação).
+    Remove marcação de separação e retorna item ao estado Pendente.
+    IMPORTANTE: Não permite desseparar itens substituídos.
+    """
+    logger.info(f"[UNSEPARAR ITEM] Requisição recebida - Item ID: {item_id}, User: {request.user.nome}")
+
+    try:
+        item = get_object_or_404(ItemPedido, id=item_id)
+        pedido = item.pedido
+
+        logger.info(f"[UNSEPARAR ITEM] Item encontrado - Produto: {item.produto.descricao[:50]}, Pedido: {pedido.numero_orcamento}")
+
+        # Verificar se pedido não está deletado
+        if pedido.deletado:
+            logger.warning(f"[UNSEPARAR ITEM] Pedido deletado - Item ID: {item_id}")
+            return JsonResponse({'success': False, 'error': 'Pedido foi deletado.'}, status=400)
+
+        # Verificar se está separado
+        if not item.separado:
+            logger.warning(f"[UNSEPARAR ITEM] Item não está separado - Item ID: {item_id}")
+            return JsonResponse({'success': False, 'error': 'Item não está separado.'}, status=400)
+
+        # IMPORTANTE: Não permitir desseparar itens substituídos
+        if item.substituido:
+            logger.warning(f"[UNSEPARAR ITEM] Item substituído não pode ser desseparado - Item ID: {item_id}")
+            return JsonResponse({'success': False, 'error': 'Itens substituídos não podem ser desseparados.'}, status=400)
+
+        # Guardar dados para auditoria
+        separado_por_anterior = item.separado_por.nome if item.separado_por else 'Desconhecido'
+        separado_em_anterior = item.separado_em.strftime('%d/%m/%Y %H:%M') if item.separado_em else 'N/A'
+
+        # Remover marcação de separação
+        item.separado = False
+        item.separado_por = None
+        item.separado_em = None
+
+        logger.info(f"[UNSEPARAR ITEM] Salvando item - ID: {item.id}, separado=False")
+        item.save(update_fields=['separado', 'separado_por', 'separado_em'])
+        logger.info(f"[UNSEPARAR ITEM] ✓ Item salvo com sucesso - ID: {item.id}")
+
+    except Exception as e:
+        logger.error(f"[UNSEPARAR ITEM] ✗ ERRO ao desseparar item {item_id}: {str(e)}", exc_info=True)
+        return JsonResponse({'success': False, 'error': f'Erro ao processar: {str(e)}'}, status=500)
+
+    # Atualizar status do pedido se necessário
+    # Verificar se todos os itens não estão mais separados
+    itens_separados = pedido.itempedido_set.filter(separado=True).count()
+    if itens_separados == 0 and pedido.status == 'EM_SEPARACAO':
+        pedido.status = 'PENDENTE'
+        pedido.save()
+
+    # Auditoria
+    ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='unseparar_item',
+        modelo='ItemPedido',
+        objeto_id=item.id,
+        dados_novos={
+            'item_id': item.id,
+            'pedido_id': pedido.id,
+            'produto': item.produto.descricao,
+            'quantidade': str(item.quantidade_solicitada),
+            'separado_por_anterior': separado_por_anterior,
+            'separado_em_anterior': separado_em_anterior
+        },
+        ip=ip,
+        user_agent=user_agent
+    )
+
+    # Broadcast WebSocket para o pedido
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"pedido_{pedido.id}",
+        {
+            "type": "item_unseparado",
+            "item": {
+                "id": item.id,
+                "separado": False
+            }
+        }
+    )
+
+    # Broadcast para dashboard (pedido atualizado)
+    async_to_sync(channel_layer.group_send)(
+        "dashboard",
+        {
+            "type": "pedido_atualizado",
+            "pedido": {
+                "id": pedido.id,
+                "numero_orcamento": pedido.numero_orcamento,
+                "status": pedido.status
+            }
+        }
+    )
+
+    logger.info(f"[UNSEPARAR ITEM] ✓ PROCESSO COMPLETO - Item {item.id} desseparado com sucesso")
+    return JsonResponse({
+        'success': True,
+        'item_id': item.id,
+        'pedido_status': pedido.status
+    })
+
+
 @admin_or_compradora
 @require_http_methods(["GET", "POST"])
 def marcar_compra_view(request, item_id):

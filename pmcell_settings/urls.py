@@ -26,6 +26,7 @@ from apps.core.views import (
     confirmar_pedido_view,
     pedido_detalhe_view,
     separar_item_view,
+    unseparar_item_view,
     marcar_compra_view,
     substituir_item_view,
     finalizar_pedido_view,
@@ -60,6 +61,7 @@ urlpatterns = [
 
     # Ações de Separação (FASE 5)
     path('pedidos/item/<int:item_id>/separar/', separar_item_view, name='separar_item'),
+    path('pedidos/item/<int:item_id>/unseparar/', unseparar_item_view, name='unseparar_item'),
     path('pedidos/item/<int:item_id>/marcar-compra/', marcar_compra_view, name='marcar_compra'),
     path('pedidos/item/<int:item_id>/substituir/', substituir_item_view, name='substituir_item'),
     path('pedidos/<int:pedido_id>/finalizar/', finalizar_pedido_view, name='finalizar_pedido'),

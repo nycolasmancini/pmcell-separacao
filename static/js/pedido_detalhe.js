@@ -369,14 +369,7 @@ function pedidoDetalheApp(pedidoId) {
         // Handle checkbox change for item separation
         async handleCheckboxChange(itemId, isChecked) {
             if (isChecked) {
-                // Separate item
-                if (!confirm('Confirma a separação deste item?')) {
-                    // Revert checkbox if user cancels
-                    const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
-                    if (checkbox) checkbox.checked = false;
-                    return;
-                }
-
+                // Separate item (no confirmation dialog)
                 try {
                     console.log(`[CHECKBOX] Enviando requisição para separar item ${itemId}...`);
 
@@ -427,9 +420,8 @@ function pedidoDetalheApp(pedidoId) {
                     this.revertVisualFeedback(itemId);
                 }
             } else {
-                // Prevent unchecking - we don't allow unseparating items
-                const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
-                if (checkbox) checkbox.checked = true;
+                // Unseparate item - check if item is substituted first
+                await this.unsepararItem(itemId);
             }
         },
 
@@ -491,6 +483,63 @@ function pedidoDetalheApp(pedidoId) {
                         statusText.textContent = '⏳ Pendente';
                     }
                 }
+            }
+        },
+
+        // Unseparar Item (revert separation)
+        async unsepararItem(itemId) {
+            try {
+                console.log(`[UNCHECK] Enviando requisição para desseparar item ${itemId}...`);
+
+                const response = await fetch(`/pedidos/item/${itemId}/unseparar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCsrfToken()
+                    }
+                });
+
+                console.log(`[UNCHECK] Response status: ${response.status} ${response.statusText}`);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`[UNCHECK] Erro HTTP ${response.status}:`, errorText);
+                    alert(`Erro ao desseparar item (HTTP ${response.status}). Verifique o console para detalhes.`);
+                    // Revert checkbox to checked state
+                    const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
+                    if (checkbox) checkbox.checked = true;
+                    return;
+                }
+
+                const data = await response.json();
+                console.log('[UNCHECK] Response data:', data);
+
+                if (data.success) {
+                    console.log('✓ [UNCHECK] Item desseparado com sucesso:', data);
+
+                    // Remove from separated items array
+                    const index = this.itemsSeparados.indexOf(itemId);
+                    if (index > -1) {
+                        this.itemsSeparados.splice(index, 1);
+                    }
+
+                    // Remove visual feedback
+                    this.revertVisualFeedback(itemId);
+
+                    // WebSocket will also handle updates
+                } else {
+                    console.error('✗ [UNCHECK] Servidor retornou erro:', data.error);
+                    alert('Erro: ' + (data.error || 'Erro ao desseparar item'));
+                    // Revert checkbox to checked state
+                    const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
+                    if (checkbox) checkbox.checked = true;
+                }
+            } catch (error) {
+                console.error('✗ [UNCHECK] Exceção ao desseparar item:', error);
+                alert(`Erro ao desseparar item: ${error.message}\nVerifique o console para mais detalhes.`);
+                // Revert checkbox to checked state
+                const checkbox = document.querySelector(`.item-checkbox[data-item-id="${itemId}"]`);
+                if (checkbox) checkbox.checked = true;
             }
         },
 

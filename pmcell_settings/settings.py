@@ -146,10 +146,9 @@ STATICFILES_DIRS = [
 ]
 
 # WhiteNoise settings
-# Temporarily using StaticFilesStorage (no compression) to force cache refresh
-# CompressedStaticFilesStorage was caching old files in Railway
-# TODO: Re-enable compression after cache issue is resolved
-STATICFILES_STORAGE = 'whitenoise.storage.StaticFilesStorage'
+# Using CompressedStaticFilesStorage instead of CompressedManifestStaticFilesStorage
+# to avoid 404 errors when manifest build is incomplete in Railway
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

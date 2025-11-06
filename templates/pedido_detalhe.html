@@ -4,7 +4,7 @@
 {% block title %}Pedido #{{ pedido.numero_orcamento }} - Sistema PMCELL{% endblock %}
 
 {% block extra_head %}
-<script src="{% static 'js/pedido_detalhe.js' %}" defer></script>
+{# Script moved to extra_js block to ensure Alpine.js loads first #}
 {% endblock %}
 
 {% block content %}
@@ -360,4 +360,8 @@
 }
 </style>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/pedido_detalhe.js' %}"></script>
 {% endblock %}

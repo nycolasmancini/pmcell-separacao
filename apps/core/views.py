@@ -882,7 +882,7 @@ def unseparar_item_view(request, item_id):
 
     # Atualizar status do pedido se necessário
     # Verificar se todos os itens não estão mais separados
-    itens_separados = pedido.itempedido_set.filter(separado=True).count()
+    itens_separados = pedido.itens.filter(separado=True).count()
     if itens_separados == 0 and pedido.status == 'EM_SEPARACAO':
         pedido.status = 'PENDENTE'
         pedido.save()

@@ -9,6 +9,8 @@ from django.db import transaction
 from datetime import timedelta, datetime, date
 import copy
 import logging
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 from .models import Usuario, LogAuditoria, Pedido, ItemPedido, Produto
 from .forms import (
     CriarUsuarioForm,
@@ -38,6 +40,44 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+
+# =====================
+# WEBSOCKET HELPER FUNCTIONS
+# =====================
+
+logger = logging.getLogger(__name__)
+
+
+def broadcast_to_websocket(group_name, message_type, data):
+    """
+    Helper function for WebSocket broadcasts with error handling
+
+    Args:
+        group_name: The channel group name to broadcast to
+        message_type: The type of message (e.g., 'item_separado', 'item_em_compra')
+        data: Dictionary with data to send
+
+    Returns:
+        True if broadcast was successful, False otherwise
+    """
+    channel_layer = get_channel_layer()
+    if channel_layer:
+        try:
+            message = {"type": message_type}
+            message.update(data)
+            async_to_sync(channel_layer.group_send)(
+                group_name,
+                message
+            )
+            logger.debug(f"[WebSocket] Broadcast sent: {message_type} to {group_name}")
+            return True
+        except Exception as e:
+            logger.error(f"[WebSocket] Broadcast failed: {e} (type: {message_type}, group: {group_name})")
+            return False
+    else:
+        logger.warning(f"[WebSocket] channel_layer is None - broadcast failed for {group_name}")
+        return False
 
 
 # Cache para rate limiting (em memória)
@@ -776,11 +816,10 @@ def separar_item_view(request, item_id):
     )
 
     # Broadcast WebSocket para o pedido
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         f"pedido_{pedido.id}",
+        "item_separado",
         {
-            "type": "item_separado",
             "item": {
                 "id": item.id,
                 "separado": True,
@@ -791,10 +830,10 @@ def separar_item_view(request, item_id):
     )
 
     # Broadcast para dashboard (pedido atualizado)
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         "dashboard",
+        "pedido_atualizado",
         {
-            "type": "pedido_atualizado",
             "pedido": {
                 "id": pedido.id,
                 "numero_orcamento": pedido.numero_orcamento,
@@ -805,10 +844,10 @@ def separar_item_view(request, item_id):
 
     # Se estava em compra, broadcast para painel de compras
     if estava_em_compra:
-        async_to_sync(channel_layer.group_send)(
+        broadcast_to_websocket(
             "painel_compras",
+            "item_separado_direto",
             {
-                "type": "item_separado_direto",
                 "item": {
                     "id": item.id,
                     "produto_codigo": item.produto.codigo,
@@ -923,11 +962,10 @@ def unseparar_item_view(request, item_id):
     )
 
     # Broadcast WebSocket para o pedido
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         f"pedido_{pedido.id}",
+        "item_unseparado",
         {
-            "type": "item_unseparado",
             "item": {
                 "id": item.id,
                 "separado": False,
@@ -941,10 +979,10 @@ def unseparar_item_view(request, item_id):
     )
 
     # Broadcast para dashboard (pedido atualizado)
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         "dashboard",
+        "pedido_atualizado",
         {
-            "type": "pedido_atualizado",
             "pedido": {
                 "id": pedido.id,
                 "numero_orcamento": pedido.numero_orcamento,
@@ -1065,15 +1103,14 @@ def marcar_compra_view(request, item_id):
     )
 
     # Broadcast WebSocket para cada pedido afetado
-    channel_layer = get_channel_layer()
     pedidos_afetados = set()
 
     for i in itens_marcados:
         pedidos_afetados.add(i.pedido.id)
-        async_to_sync(channel_layer.group_send)(
+        broadcast_to_websocket(
             f"pedido_{i.pedido.id}",
+            "item_em_compra",
             {
-                "type": "item_em_compra",
                 "item": {
                     "id": i.id,
                     "em_compra": True,
@@ -1086,10 +1123,10 @@ def marcar_compra_view(request, item_id):
     # Broadcast para dashboard
     for pedido_id in pedidos_afetados:
         p = Pedido.objects.get(id=pedido_id)
-        async_to_sync(channel_layer.group_send)(
+        broadcast_to_websocket(
             "dashboard",
+            "pedido_atualizado",
             {
-                "type": "pedido_atualizado",
                 "pedido": {
                     "id": p.id,
                     "numero_orcamento": p.numero_orcamento,
@@ -1164,11 +1201,10 @@ def substituir_item_view(request, item_id):
     )
 
     # Broadcast WebSocket
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         f"pedido_{pedido.id}",
+        "item_substituido",
         {
-            "type": "item_substituido",
             "item": {
                 "id": item.id,
                 "substituido": True,
@@ -1181,10 +1217,10 @@ def substituir_item_view(request, item_id):
     )
 
     # Broadcast para dashboard
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         "dashboard",
+        "pedido_atualizado",
         {
-            "type": "pedido_atualizado",
             "pedido": {
                 "id": pedido.id,
                 "numero_orcamento": pedido.numero_orcamento,
@@ -1241,20 +1277,19 @@ def finalizar_pedido_view(request, pedido_id):
     )
 
     # Broadcast WebSocket
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         f"pedido_{pedido.id}",
+        "pedido_finalizado",
         {
-            "type": "pedido_finalizado",
             "pedido_id": pedido.id
         }
     )
 
     # Broadcast para dashboard
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         "dashboard",
+        "pedido_finalizado",
         {
-            "type": "pedido_finalizado",
             "pedido_id": pedido.id,
             "numero_orcamento": pedido.numero_orcamento
         }
@@ -1314,20 +1349,19 @@ def deletar_pedido_view(request, pedido_id):
     )
 
     # Broadcast WebSocket
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         f"pedido_{pedido.id}",
+        "pedido_deletado",
         {
-            "type": "pedido_deletado",
             "pedido_id": pedido.id
         }
     )
 
     # Broadcast para dashboard (remove da lista)
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         "dashboard",
+        "pedido_finalizado",  # Usa o mesmo evento para remover da lista
         {
-            "type": "pedido_finalizado",  # Usa o mesmo evento para remover da lista
             "pedido_id": pedido.id,
             "numero_orcamento": pedido.numero_orcamento
         }
@@ -1481,11 +1515,10 @@ def confirmar_compra_view(request, produto_codigo):
     )
 
     # Broadcast WebSocket para painel de compras
-    channel_layer = get_channel_layer()
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         "painel_compras",
+        "compra_confirmada",
         {
-            "type": "compra_confirmada",
             "produto": {
                 "codigo": produto_codigo,
                 "descricao": produto_descricao,
@@ -1496,19 +1529,19 @@ def confirmar_compra_view(request, produto_codigo):
 
     # Broadcast para cada pedido afetado
     for pedido_id in pedidos_afetados:
-        async_to_sync(channel_layer.group_send)(
+        broadcast_to_websocket(
             f"pedido_{pedido_id}",
+            "compra_realizada",
             {
-                "type": "compra_realizada",
                 "produto_codigo": produto_codigo
             }
         )
 
     # Broadcast para dashboard
-    async_to_sync(channel_layer.group_send)(
+    broadcast_to_websocket(
         "dashboard",
+        "compra_confirmada",
         {
-            "type": "compra_confirmada",
             "produto_codigo": produto_codigo
         }
     )

@@ -858,10 +858,10 @@ def unseparar_item_view(request, item_id):
             logger.warning(f"[UNSEPARAR ITEM] Item não está separado - Item ID: {item_id}")
             return JsonResponse({'success': False, 'error': 'Item não está separado.'}, status=400)
 
-        # IMPORTANTE: Não permitir desseparar itens substituídos
-        if item.substituido:
-            logger.warning(f"[UNSEPARAR ITEM] Item substituído não pode ser desseparado - Item ID: {item_id}")
-            return JsonResponse({'success': False, 'error': 'Itens substituídos não podem ser desseparados.'}, status=400)
+        # Detectar se item está substituído para limpar campos adicionais
+        estava_substituido = item.substituido
+        produto_substituto_anterior = item.produto_substituto if estava_substituido else None
+        estava_em_compra = item.em_compra
 
         # Guardar dados para auditoria
         separado_por_anterior = item.separado_por.nome if item.separado_por else 'Desconhecido'
@@ -872,8 +872,23 @@ def unseparar_item_view(request, item_id):
         item.separado_por = None
         item.separado_em = None
 
-        logger.info(f"[UNSEPARAR ITEM] Salvando item - ID: {item.id}, separado=False")
-        item.save(update_fields=['separado', 'separado_por', 'separado_em'])
+        # Se estava substituído, limpar campos de substituição
+        fields_to_update = ['separado', 'separado_por', 'separado_em']
+        if estava_substituido:
+            logger.info(f"[UNSEPARAR ITEM] Removendo substituição - Item ID: {item_id}, produto_substituto: {produto_substituto_anterior}")
+            item.substituido = False
+            item.produto_substituto = ''
+            fields_to_update.extend(['substituido', 'produto_substituto'])
+
+        # Se estava em compra, limpar campos de compra
+        if estava_em_compra:
+            logger.info(f"[UNSEPARAR ITEM] Removendo marcação de compra - Item ID: {item_id}")
+            item.em_compra = False
+            item.compra_realizada = False
+            fields_to_update.extend(['em_compra', 'compra_realizada'])
+
+        logger.info(f"[UNSEPARAR ITEM] Salvando item - ID: {item.id}, separado=False, substituido=False, em_compra=False")
+        item.save(update_fields=fields_to_update)
         logger.info(f"[UNSEPARAR ITEM] ✓ Item salvo com sucesso - ID: {item.id}")
 
     except Exception as e:
@@ -915,7 +930,12 @@ def unseparar_item_view(request, item_id):
             "type": "item_unseparado",
             "item": {
                 "id": item.id,
-                "separado": False
+                "separado": False,
+                "substituido": False,
+                "produto_substituto": "",
+                "em_compra": False,
+                "estava_substituido": estava_substituido,
+                "estava_em_compra": estava_em_compra
             }
         }
     )

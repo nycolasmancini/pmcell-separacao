@@ -1,0 +1,220 @@
+
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║         TESTE DE PRODUÇÃO - PMCELL STATUS UPDATE            ║
+    ║         Site: web-production-312d.up.railway.app            ║
+    ╚═══════════════════════════════════════════════════════════════╝
+    
+
+======================================================================
+  🚀 TESTE DE PRODUÇÃO - PMCELL
+======================================================================
+URL: https://web-production-312d.up.railway.app
+Início: 2025-11-06 14:31:07
+
+🌐 Abrindo navegador...
+
+======================================================================
+  STEP 1: Navegando para o site de produção
+======================================================================
+🖥️  Console: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+🖥️  Console: [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o
+🖥️  Console: Failed to load resource: the server responded with a status of 404 ()
+✓ Navegou para: https://web-production-312d.up.railway.app/login/
+📸 Screenshot saved: test_screenshots/20251106_143112_01_homepage.png
+
+======================================================================
+  STEP 2: Verificando página de login
+======================================================================
+✓ Página de login detectada
+📸 Screenshot saved: test_screenshots/20251106_143114_02_login_page.png
+
+======================================================================
+  🔐 USANDO CREDENCIAIS
+======================================================================
+Login: 1000
+PIN: ****
+
+💡 Dica: Use PMCELL_LOGIN e PMCELL_PIN para customizar
+======================================================================
+
+📝 Fazendo login com usuário: 1000
+📸 Screenshot saved: test_screenshots/20251106_143117_03_login_filled.png
+🖥️  Console: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+🖥️  Console: [Dashboard] Inicializando WebSocket...
+🖥️  Console: [WebSocket] Conectando ao dashboard... wss://web-production-312d.up.railway.app/ws/dashboard/
+🖥️  Console: WebSocket connection to 'wss://web-production-312d.up.railway.app/ws/dashboard/' failed: Error during WebSocket handshake: Unexpected response code: 404
+🖥️  Console: [WebSocket] Erro na conexão: Event
+🖥️  Console: [WebSocket] Conexão fechada: 1006 
+🖥️  Console: [WebSocket] Tentando reconectar em 1s... (tentativa 1)
+✓ Formulário enviado
+✅ Login bem-sucedido!
+🖥️  Console: [WebSocket] Conectando ao dashboard... wss://web-production-312d.up.railway.app/ws/dashboard/
+🖥️  Console: WebSocket connection to 'wss://web-production-312d.up.railway.app/ws/dashboard/' failed: Error during WebSocket handshake: Unexpected response code: 404
+🖥️  Console: [WebSocket] Erro na conexão: Event
+🖥️  Console: [WebSocket] Conexão fechada: 1006 
+🖥️  Console: [WebSocket] Tentando reconectar em 2s... (tentativa 2)
+📸 Screenshot saved: test_screenshots/20251106_143121_04_dashboard.png
+
+======================================================================
+  STEP 3: Navegando para um pedido pendente
+======================================================================
+🖥️  Console: [WebSocket] Conectando ao dashboard... wss://web-production-312d.up.railway.app/ws/dashboard/
+🖥️  Console: WebSocket connection to 'wss://web-production-312d.up.railway.app/ws/dashboard/' failed: Error during WebSocket handshake: Unexpected response code: 404
+🖥️  Console: [WebSocket] Erro na conexão: Event
+🖥️  Console: [WebSocket] Conexão fechada: 1006 
+🖥️  Console: [WebSocket] Tentando reconectar em 4s... (tentativa 3)
+⚠️  Nenhum pedido pendente encontrado na dashboard
+📸 Screenshot saved: test_screenshots/20251106_143124_05_no_pending_orders.png
+⚙️  Tentando pedido ID: 1
+🖥️  Console: cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+🖥️  Console: Alpine Expression Error: pedidoDetalheApp is not defined
+
+Expression: "pedidoDetalheApp(1)"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{'row-separated': itemsSeparados.includes(1)}"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{'line-through': itemsSeparados.includes(1)}"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{
+                                    'bg-green-100 text-green-800': itemsSeparados.includes(1)
+                                }"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{'row-separated': itemsSeparados.includes(2)}"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{'line-through': itemsSeparados.includes(2)}"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{
+                                    'bg-green-100 text-green-800': itemsSeparados.includes(2)
+                                }"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{'row-separated': itemsSeparados.includes(3)}"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{'line-through': itemsSeparados.includes(3)}"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: itemsSeparados is not defined
+
+Expression: "{
+                                    'bg-green-100 text-green-800': itemsSeparados.includes(3)
+                                }"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: modalSubstituir is not defined
+
+Expression: "modalSubstituir.show"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: modalSubstituir is not defined
+
+Expression: "modalSubstituir.produtoSubstituto"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: modalCompra is not defined
+
+Expression: "modalCompra.show"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: modalCompra is not defined
+
+Expression: "modalCompra.outrosItens.length > 0"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: modalCompra is not defined
+
+Expression: "modalCompra.outrosItens"
+
+ JSHandle@node
+🖥️  Console: Alpine Expression Error: modalCompra is not defined
+
+Expression: "modalCompra.outrosItens.length === 0"
+
+ JSHandle@node
+✓ Navegou para pedido ID: 1
+📸 Screenshot saved: test_screenshots/20251106_143127_05_order_details_manual.png
+
+======================================================================
+  STEP 4: Verificando carregamento do JavaScript
+======================================================================
+❌ Alpine.js NÃO inicializado - JavaScript pode não estar carregando
+✅ Script pedido_detalhe.js encontrado no HTML
+📸 Screenshot saved: test_screenshots/20251106_143127_06_javascript_check.png
+
+======================================================================
+  STEP 5: Testando checkbox - Marcar item como separado
+======================================================================
+📦 Testando item ID: 1
+🎨 Cor inicial da linha: rgba(0, 0, 0, 0)
+📸 Screenshot saved: test_screenshots/20251106_143127_07_before_checkbox_click.png
+🖱️  Clicando no checkbox...
+🖥️  Console: Alpine Expression Error: handleCheckboxChange is not defined
+
+Expression: "handleCheckboxChange(1, $event.target.checked)"
+
+ JSHandle@node
+📸 Screenshot saved: test_screenshots/20251106_143131_08_after_checkbox_click.png
+
+🔍 Verificando mudanças...
+🎨 Cor final da linha: rgb(249, 250, 251)
+✅ COR DA LINHA MUDOU (esperado: verde claro)
+❌ Badge 'Separado' NÃO apareceu
+❌ Checkbox foi desmarcado
+⚠️  Contador não encontrado
+
+======================================================================
+  STEP 6: Testando ações do menu (Compra/Substituir)
+======================================================================
+⚠️  Botão de menu não encontrado
+
+======================================================================
+  STEP 7: Verificação Final
+======================================================================
+📸 Screenshot saved: test_screenshots/20251106_143133_10_final_state.png
+
+📋 Verificando console do navegador...
+(Verifique os logs acima marcados com 🖥️  Console)
+
+======================================================================
+  📊 RESUMO DO TESTE
+======================================================================
+✅ Navegação para site de produção
+✅ Login no sistema
+✅ Navegação para pedido
+❌ JavaScript (Alpine.js) inicializado
+✅ Script pedido_detalhe.js carregado
+✅ Teste de checkbox realizado
+✅ Screenshots capturados
+
+📁 Screenshots salvos em: test_screenshots/
+🕐 Fim: 2025-11-06 14:31:33
+
+⏳ Mantendo navegador aberto por 10 segundos para inspeção...
+
+🔒 Fechando navegador...
+
+✅ TESTE CONCLUÍDO COM SUCESSO!
+
+======================================================================

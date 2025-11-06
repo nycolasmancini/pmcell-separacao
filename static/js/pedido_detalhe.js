@@ -303,6 +303,31 @@ class PedidoDetalheWebSocket {
                 descDiv.classList.remove('line-through');
             }
 
+            // Se estava substituído, remover informações de substituição
+            if (item.estava_substituido) {
+                console.log('[WebSocket] Removendo informações de substituição');
+                const descriptionCell = row.querySelector('.item-description');
+                if (descriptionCell) {
+                    // Remover div de substituição se existir
+                    const substitutoDiv = descriptionCell.querySelector('.text-red-600.mt-1.text-xs');
+                    if (substitutoDiv) {
+                        substitutoDiv.remove();
+                    }
+                }
+            }
+
+            // Se estava em compra, remover badge de compra
+            if (item.estava_em_compra) {
+                console.log('[WebSocket] Removendo badge de compra');
+                const actionButtons = row.querySelector('.flex.gap-2.items-center');
+                if (actionButtons) {
+                    const compraBadge = actionButtons.querySelector('.bg-yellow-100.text-yellow-800');
+                    if (compraBadge) {
+                        compraBadge.remove();
+                    }
+                }
+            }
+
             // Atualizar status badge para Pendente
             const statusCell = row.querySelector('td:nth-child(5)');
             if (statusCell) {

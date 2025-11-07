@@ -30,35 +30,31 @@
 
         /**
          * Animate a single progress bar
-         * Don't reset bars that already have width from server rendering
+         * On initial load: trust server-rendered width, don't recalculate
+         * On updates: animate from current to target
          */
-        animateProgressBar: function(bar, targetProgress) {
-            // Force browser to compute styles first using getComputedStyle
-            const computedWidth = window.getComputedStyle(bar).width;
-            const currentWidthPx = parseFloat(computedWidth) || 0;
-            const barWidth = bar.parentElement.offsetWidth || 1; // Parent width for percentage calculation
-            const currentPercentage = (currentWidthPx / barWidth) * 100;
+        animateProgressBar: function(bar, targetProgress, forceAnimate = false) {
+            const currentWidth = bar.style.width;
+            const dataProgress = parseFloat(bar.dataset.progress) || 0;
 
-            console.log(`[CardProgress] Bar current: ${currentPercentage.toFixed(1)}%, target: ${targetProgress}%`);
+            console.log(`[CardProgress] Bar target: ${targetProgress}%, current style: ${currentWidth}, data-progress: ${dataProgress}, forceAnimate: ${forceAnimate}`);
 
-            // If bar already has server-rendered width close to target, don't animate
-            if (Math.abs(currentPercentage - targetProgress) < 1) {
-                // Already at target (within 1%), just ensure it's set
-                bar.style.width = `${targetProgress}%`;
+            // On initial page load (not forced), trust server-rendered inline style
+            // Don't recalculate or override - just verify data attribute matches
+            if (!forceAnimate) {
+                // Initial load: server already set correct width inline
+                // Just ensure data attribute is in sync
+                if (bar.dataset.progress !== targetProgress.toString()) {
+                    bar.dataset.progress = targetProgress;
+                }
+                console.log(`[CardProgress] Initial load - trusting server width: ${currentWidth}`);
                 return;
             }
 
-            // If bar is empty (< 1%), animate from 0 to target
-            if (currentPercentage < 1) {
-                bar.style.width = '0%';
-                void bar.offsetWidth; // Force reflow
-                setTimeout(() => {
-                    bar.style.width = `${targetProgress}%`;
-                }, 100);
-            } else {
-                // Bar has some width, animate to new target
-                bar.style.width = `${targetProgress}%`;
-            }
+            // For real-time updates (forceAnimate = true), animate the change
+            console.log(`[CardProgress] Animating from ${currentWidth} to ${targetProgress}%`);
+            bar.dataset.progress = targetProgress;
+            bar.style.width = `${targetProgress}%`;
         },
 
         /**
@@ -84,7 +80,8 @@
             if (progressBar) {
                 const progress = this.calculateProgress(separated, substituted, total);
                 progressBar.dataset.progress = progress;
-                this.animateProgressBar(progressBar, progress);
+                // Force animation for real-time updates (not initial load)
+                this.animateProgressBar(progressBar, progress, true);
             }
 
             if (progressText) {

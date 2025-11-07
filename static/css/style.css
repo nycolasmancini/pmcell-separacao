@@ -193,10 +193,6 @@
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
-  /* Ensure minimum visibility for small percentages */
-  min-width: 3px;
-  /* Ensure initial visibility - no opacity issues */
-  opacity: 1;
 }
 
 /* Hide completely only if explicitly 0% via data attribute */

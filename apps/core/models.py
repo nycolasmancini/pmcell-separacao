@@ -148,6 +148,21 @@ class Pedido(models.Model):
         ('CANCELADO', 'Cancelado'),
     ]
 
+    LOGISTICA_CHOICES = [
+        ('RETIRADA', 'Retirada'),
+        ('ENTREGA', 'Entrega'),
+        ('TRANSPORTADORA', 'Transportadora'),
+        ('MOTOBOY', 'Motoboy'),
+    ]
+
+    EMBALAGEM_CHOICES = [
+        ('CAIXA_PEQUENA', 'Caixa Pequena'),
+        ('CAIXA_MEDIA', 'Caixa Média'),
+        ('CAIXA_GRANDE', 'Caixa Grande'),
+        ('SACO_PLASTICO', 'Saco Plástico'),
+        ('SEM_EMBALAGEM', 'Sem Embalagem'),
+    ]
+
     numero_orcamento = models.CharField(max_length=50, unique=True, verbose_name='Número do Orçamento')
     codigo_cliente = models.CharField(max_length=100, verbose_name='Código do Cliente')
     nome_cliente = models.CharField(max_length=200, verbose_name='Nome do Cliente')
@@ -158,8 +173,18 @@ class Pedido(models.Model):
         verbose_name='Vendedor'
     )
     data = models.DateField(verbose_name='Data')
-    logistica = models.CharField(max_length=100, blank=True, verbose_name='Logística')
-    embalagem = models.CharField(max_length=100, blank=True, verbose_name='Embalagem')
+    logistica = models.CharField(
+        max_length=100,
+        blank=True,
+        choices=LOGISTICA_CHOICES,
+        verbose_name='Logística'
+    )
+    embalagem = models.CharField(
+        max_length=100,
+        blank=True,
+        choices=EMBALAGEM_CHOICES,
+        verbose_name='Embalagem'
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

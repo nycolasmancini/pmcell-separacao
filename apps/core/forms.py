@@ -42,26 +42,9 @@ class UploadPDFForm(forms.Form):
 class ConfirmarPedidoForm(forms.Form):
     """Formulário para confirmar pedido após processamento do PDF"""
 
-    LOGISTICA_CHOICES = [
-        ('', 'Selecione...'),
-        ('RETIRADA', 'Retirada'),
-        ('ENTREGA', 'Entrega'),
-        ('TRANSPORTADORA', 'Transportadora'),
-        ('MOTOBOY', 'Motoboy'),
-    ]
-
-    EMBALAGEM_CHOICES = [
-        ('', 'Selecione...'),
-        ('CAIXA_PEQUENA', 'Caixa Pequena'),
-        ('CAIXA_MEDIA', 'Caixa Média'),
-        ('CAIXA_GRANDE', 'Caixa Grande'),
-        ('SACO_PLASTICO', 'Saco Plástico'),
-        ('SEM_EMBALAGEM', 'Sem Embalagem'),
-    ]
-
     logistica = forms.ChoiceField(
         label='Logística',
-        choices=LOGISTICA_CHOICES,
+        choices=[('', 'Selecione...')] + Pedido.LOGISTICA_CHOICES,
         required=True,
         widget=forms.Select(attrs={
             'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
@@ -70,7 +53,7 @@ class ConfirmarPedidoForm(forms.Form):
 
     embalagem = forms.ChoiceField(
         label='Embalagem',
-        choices=EMBALAGEM_CHOICES,
+        choices=[('', 'Selecione...')] + Pedido.EMBALAGEM_CHOICES,
         required=True,
         widget=forms.Select(attrs={
             'class': 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'

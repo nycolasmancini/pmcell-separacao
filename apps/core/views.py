@@ -410,6 +410,14 @@ def dashboard(request):
     # Preparar dados dos pedidos para o template
     pedidos_data = []
     for pedido in pedidos:
+        # Calcular itens separados e substituídos para a barra de progresso
+        itens = pedido.itens.all()
+        total_itens = itens.count()
+        itens_separados = itens.filter(separado=True).count()
+        itens_substituidos = itens.filter(substituido=True).count()
+        itens_completos = itens_separados + itens_substituidos
+        porcentagem_separacao = (itens_completos / total_itens * 100) if total_itens > 0 else 0
+
         pedidos_data.append({
             'id': pedido.id,
             'numero_orcamento': pedido.numero_orcamento,
@@ -420,7 +428,11 @@ def dashboard(request):
             'status_display': pedido.get_status_display(),
             'data': pedido.data.strftime('%d/%m/%Y'),
             'data_criacao': pedido.data_criacao.strftime('%d/%m/%Y %H:%M'),
-            'total_itens': pedido.itens.count(),
+            'total_itens': total_itens,
+            'logistica': pedido.logistica,
+            'embalagem': pedido.embalagem,
+            'itens_separados': itens_completos,
+            'porcentagem_separacao': round(porcentagem_separacao, 1),
         })
 
     # Calcular estatísticas de compras (para COMPRADORA e ADMIN)

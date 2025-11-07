@@ -5,6 +5,7 @@
 
 {% block extra_head %}
 <script src="{% static 'js/dashboard.js' %}" defer></script>
+<script src="{% static 'js/cards.js' %}" defer></script>
 {% endblock %}
 
 {% block content %}
@@ -182,36 +183,78 @@
         </div>
 
         {% if pedidos %}
-        <div id="pedidos-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="pedidos-container" class="card-grid">
             {% for pedido in pedidos %}
-            <div class="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
+            <div class="card-modern fade-in"
                  data-pedido-id="{{ pedido.id }}"
                  data-pedido-status="{{ pedido.status }}"
                  data-vendedor-id="{{ pedido.vendedor_id }}">
 
-                <div class="flex justify-between items-start mb-3">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        Orçamento #{{ pedido.numero_orcamento }}
-                    </h3>
-                    <span class="{% if pedido.status == 'PENDENTE' %}px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-800{% elif pedido.status == 'EM_SEPARACAO' %}px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800{% elif pedido.status == 'AGUARDANDO_COMPRA' %}px-2 py-1 text-xs font-medium rounded bg-orange-100 text-orange-800{% endif %}"
-                          data-status>
-                        {{ pedido.status_display }}
-                    </span>
-                </div>
+                <!-- Borda superior colorida baseada no status -->
+                <div class="card-border-top
+                    {% if pedido.status == 'PENDENTE' %}card-border-pendente
+                    {% elif pedido.status == 'EM_SEPARACAO' %}card-border-em-separacao
+                    {% elif pedido.status == 'AGUARDANDO_COMPRA' %}card-border-aguardando-compra
+                    {% elif pedido.status == 'FINALIZADO' %}card-border-finalizado
+                    {% elif pedido.status == 'CANCELADO' %}card-border-cancelado
+                    {% endif %}"></div>
 
-                <div class="text-sm text-gray-600 space-y-2">
-                    <p><strong>Cliente:</strong> {{ pedido.cliente }}</p>
-                    <p><strong>Vendedor:</strong> {{ pedido.vendedor }}</p>
-                    <p><strong>Data:</strong> {{ pedido.data }}</p>
-                    <p><strong>Itens:</strong> {{ pedido.total_itens }}</p>
-                    <p class="text-xs text-gray-500">Criado em: {{ pedido.data_criacao }}</p>
-                </div>
+                <div class="card-content">
+                    <!-- Header: Número do orçamento e Badge de Status -->
+                    <div class="card-header">
+                        <span class="card-number">#{{ pedido.numero_orcamento }}</span>
+                        <span class="status-badge-modern
+                            {% if pedido.status == 'PENDENTE' %}badge-pendente
+                            {% elif pedido.status == 'EM_SEPARACAO' %}badge-em-separacao
+                            {% elif pedido.status == 'AGUARDANDO_COMPRA' %}badge-aguardando-compra
+                            {% elif pedido.status == 'FINALIZADO' %}badge-finalizado
+                            {% elif pedido.status == 'CANCELADO' %}badge-cancelado
+                            {% endif %}"
+                            data-status>
+                            {{ pedido.status_display }}
+                        </span>
+                    </div>
 
-                <div class="mt-4 pt-3 border-t border-gray-200">
-                    <a href="{% url 'pedido_detalhe' pedido.id %}"
-                       class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                        Ver Detalhes →
-                    </a>
+                    <!-- Divisor -->
+                    <div class="card-divider"></div>
+
+                    <!-- Informações do Pedido -->
+                    <div class="card-info">
+                        <p class="card-info-primary">{{ pedido.cliente }}</p>
+                        <p class="card-info-item">
+                            <span class="card-info-label">Vendedor:</span>
+                            <span class="card-info-value">{{ pedido.vendedor }}</span>
+                        </p>
+                        <p class="card-info-item">
+                            <span class="card-info-label">Logística:</span>
+                            <span class="card-info-value">{{ pedido.logistica|default:"Não definida" }}</span>
+                        </p>
+                        <p class="card-info-item card-info-value">
+                            {{ pedido.embalagem|default:"Embalagem padrão" }}
+                        </p>
+                    </div>
+
+                    <!-- Barra de Progresso -->
+                    <div class="progress-container">
+                        <div class="progress-wrapper">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill"
+                                     style="width: {{ pedido.porcentagem_separacao|default:0 }}%"
+                                     data-progress="{{ pedido.porcentagem_separacao|default:0 }}"></div>
+                            </div>
+                            <span class="progress-text">
+                                {{ pedido.itens_separados|default:0 }}/{{ pedido.total_itens }} itens
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Link para detalhes -->
+                    <div class="mt-4 pt-3 border-t border-gray-200">
+                        <a href="{% url 'pedido_detalhe' pedido.id %}"
+                           class="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                            Ver Detalhes →
+                        </a>
+                    </div>
                 </div>
             </div>
             {% endfor %}

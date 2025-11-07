@@ -14,6 +14,10 @@
     <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js"></script>
 
+    <!-- Custom Styles -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
     {% block extra_css %}{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>

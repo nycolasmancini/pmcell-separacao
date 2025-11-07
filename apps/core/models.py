@@ -278,6 +278,14 @@ class Pedido(models.Model):
         # Prioridade 4: Nenhum progresso
         return 'NAO_INICIADO', 'Não Iniciado'
 
+    def get_card_status_css(self):
+        """
+        Retorna o card_status formatado para uso em classes CSS.
+        Converte NAO_INICIADO -> nao-iniciado, EM_SEPARACAO -> em-separacao, etc.
+        """
+        card_status_code, _ = self.get_card_status()
+        return card_status_code.lower().replace('_', '-')
+
 
 class Produto(models.Model):
     """Modelo de Produto"""

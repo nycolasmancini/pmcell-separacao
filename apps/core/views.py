@@ -447,6 +447,7 @@ def dashboard(request):
 
         # Obter card_status baseado no estado dos itens
         card_status_code, card_status_display = pedido.get_card_status()
+        card_status_css = pedido.get_card_status_css()
 
         pedidos_data.append({
             'id': pedido.id,
@@ -458,6 +459,7 @@ def dashboard(request):
             'status_display': pedido.get_status_display(),
             'card_status': card_status_code,
             'card_status_display': card_status_display,
+            'card_status_css': card_status_css,
             'data': pedido.data.strftime('%d/%m/%Y'),
             'data_criacao': pedido.data_criacao.strftime('%d/%m/%Y %H:%M'),
             'total_itens': total_itens,
@@ -732,6 +734,7 @@ def confirmar_pedido_view(request):
 
                         # Obter card_status
                         card_status_code, card_status_display = pedido.get_card_status()
+                        card_status_css = pedido.get_card_status_css()
 
                         async_to_sync(channel_layer.group_send)(
                             "dashboard",
@@ -747,6 +750,7 @@ def confirmar_pedido_view(request):
                                     "status_display": pedido.get_status_display(),
                                     "card_status": card_status_code,
                                     "card_status_display": card_status_display,
+                                    "card_status_css": card_status_css,
                                     "data": data_formatada,
                                     "data_criacao": data_criacao_formatada,
                                     "total_itens": pedido.itens.count(),

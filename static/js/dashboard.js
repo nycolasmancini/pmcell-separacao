@@ -270,17 +270,20 @@ class DashboardWebSocket {
     }
 
     createPedidoCardHtml(pedido) {
-        const borderClass = this.getStatusBorderClass(pedido.status);
-        const badgeClass = this.getStatusBadgeClass(pedido.status);
+        // Use card_status_css if available (from WebSocket), otherwise fall back to old method
+        const borderClass = pedido.card_status_css ? `card-border-${pedido.card_status_css}` : this.getStatusBorderClass(pedido.status);
+        const badgeClass = pedido.card_status_css ? `badge-${pedido.card_status_css}` : this.getStatusBadgeClass(pedido.status);
+        const displayStatus = pedido.card_status_display || pedido.status_display;
 
         return `
             <a href="/pedido/${pedido.id}/" class="card-link">
                 <div class="card-modern fade-in"
                      data-pedido-id="${pedido.id}"
                      data-pedido-status="${pedido.status}"
+                     data-card-status="${pedido.card_status || ''}"
                      data-vendedor-id="${pedido.vendedor_id}">
 
-                    <!-- Borda superior colorida baseada no status -->
+                    <!-- Borda superior colorida baseada no card_status -->
                     <div class="card-border-top ${borderClass}"></div>
 
                     <div class="card-content">
@@ -288,7 +291,7 @@ class DashboardWebSocket {
                         <div class="card-header">
                             <span class="card-number">#${pedido.numero_orcamento}</span>
                             <span class="status-badge-modern ${badgeClass}" data-status>
-                                ${pedido.status_display}
+                                ${displayStatus}
                             </span>
                         </div>
 

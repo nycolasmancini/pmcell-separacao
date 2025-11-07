@@ -15,22 +15,10 @@
         <!-- Linha colorida superior baseada no status -->
         <div class="header-border-top bg-{{ card_status_css }}"></div>
 
-        <!-- Link voltar -->
-        <div class="mb-3">
-            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800 text-sm">
-                ← Voltar ao Dashboard
-            </a>
-        </div>
-
-        <!-- Número do pedido e Status -->
-        <div class="flex justify-between items-start mb-3">
-            <div class="flex items-center gap-3">
-                <span class="text-2xl font-bold text-gray-800">#{{ pedido.numero_orcamento }}</span>
-                <span id="ws-status-indicator" class="inline-block w-2 h-2 bg-gray-400 rounded-full" title="Conectando..."></span>
-            </div>
-            <span class="status-badge-modern badge-{{ card_status_css }}">
-                {{ card_status_display }}
-            </span>
+        <!-- Número do pedido -->
+        <div class="flex items-center gap-3 mb-3">
+            <span class="text-2xl font-bold text-gray-800">#{{ pedido.numero_orcamento }}</span>
+            <span id="ws-status-indicator" class="inline-block w-2 h-2 bg-gray-400 rounded-full" title="Conectando..."></span>
         </div>
 
         <!-- Informações do pedido -->
@@ -52,19 +40,6 @@
             {% endfor %}
         </div>
         {% endif %}
-
-        <!-- Barra de progresso -->
-        <div class="progress-container mt-4">
-            <div class="progress-wrapper">
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill"
-                         style="width: {{ porcentagem_separacao|default:0 }}%"
-                         data-progress="{{ porcentagem_separacao|default:0 }}">
-                    </div>
-                </div>
-                <span class="progress-text">{{ porcentagem_separacao|default:0 }}%</span>
-            </div>
-        </div>
     </div>
 
     <!-- Estatísticas -->

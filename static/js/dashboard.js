@@ -228,46 +228,85 @@ class DashboardWebSocket {
     }
 
     createPedidoCardHtml(pedido) {
-        const statusClass = this.getStatusBadgeClass(pedido.status);
+        const borderClass = this.getStatusBorderClass(pedido.status);
+        const badgeClass = this.getStatusBadgeClass(pedido.status);
 
         return `
-            <div class="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow"
-                 data-pedido-id="${pedido.id}"
-                 data-pedido-status="${pedido.status}"
-                 data-vendedor-id="${pedido.vendedor_id}">
-                <div class="flex justify-between items-start mb-2">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        Orçamento #${pedido.numero_orcamento}
-                    </h3>
-                    <span class="${statusClass}" data-status>
-                        ${pedido.status_display}
-                    </span>
-                </div>
+            <a href="/pedido/${pedido.id}/" class="card-link">
+                <div class="card-modern fade-in"
+                     data-pedido-id="${pedido.id}"
+                     data-pedido-status="${pedido.status}"
+                     data-vendedor-id="${pedido.vendedor_id}">
 
-                <div class="text-sm text-gray-600 space-y-1">
-                    <p><strong>Cliente:</strong> ${pedido.cliente}</p>
-                    <p><strong>Vendedor:</strong> ${pedido.vendedor}</p>
-                    <p><strong>Data:</strong> ${pedido.data}</p>
-                    <p><strong>Itens:</strong> ${pedido.total_itens}</p>
-                </div>
+                    <!-- Borda superior colorida baseada no status -->
+                    <div class="card-border-top ${borderClass}"></div>
 
-                <div class="mt-3 flex gap-2">
-                    <a href="/pedidos/${pedido.id}/"
-                       class="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                        Ver Detalhes →
-                    </a>
+                    <div class="card-content">
+                        <!-- Header: Número do orçamento e Badge de Status -->
+                        <div class="card-header">
+                            <span class="card-number">#${pedido.numero_orcamento}</span>
+                            <span class="status-badge-modern ${badgeClass}" data-status>
+                                ${pedido.status_display}
+                            </span>
+                        </div>
+
+                        <!-- Divisor -->
+                        <div class="card-divider"></div>
+
+                        <!-- Informações do Pedido -->
+                        <div class="card-info">
+                            <p class="card-info-primary">${pedido.cliente}</p>
+                            <p class="card-info-item">
+                                <span class="card-info-label">Vendedor:</span>
+                                <span class="card-info-value">${pedido.vendedor}</span>
+                            </p>
+                            <p class="card-info-item">
+                                <span class="card-info-label">Logística:</span>
+                                <span class="card-info-value">${pedido.logistica || 'Não definida'}</span>
+                            </p>
+                            <p class="card-info-item card-info-value">
+                                ${pedido.embalagem || 'Embalagem padrão'}
+                            </p>
+                        </div>
+
+                        <!-- Barra de Progresso -->
+                        <div class="progress-container">
+                            <div class="progress-wrapper">
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill"
+                                         style="width: ${pedido.porcentagem_separacao || 0}%"
+                                         data-progress="${pedido.porcentagem_separacao || 0}"></div>
+                                </div>
+                                <span class="progress-text">
+                                    ${pedido.porcentagem_separacao || 0}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </a>
         `;
     }
 
     getStatusBadgeClass(status) {
         const classes = {
-            'PENDENTE': 'px-2 py-1 text-xs font-medium rounded bg-yellow-100 text-yellow-800',
-            'EM_SEPARACAO': 'px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800',
-            'AGUARDANDO_COMPRA': 'px-2 py-1 text-xs font-medium rounded bg-orange-100 text-orange-800',
-            'FINALIZADO': 'px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-800',
-            'CANCELADO': 'px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-800',
+            'PENDENTE': 'badge-pendente',
+            'EM_SEPARACAO': 'badge-em-separacao',
+            'AGUARDANDO_COMPRA': 'badge-aguardando-compra',
+            'FINALIZADO': 'badge-finalizado',
+            'CANCELADO': 'badge-cancelado',
+        };
+
+        return classes[status] || classes['PENDENTE'];
+    }
+
+    getStatusBorderClass(status) {
+        const classes = {
+            'PENDENTE': 'card-border-pendente',
+            'EM_SEPARACAO': 'card-border-em-separacao',
+            'AGUARDANDO_COMPRA': 'card-border-aguardando-compra',
+            'FINALIZADO': 'card-border-finalizado',
+            'CANCELADO': 'card-border-cancelado',
         };
 
         return classes[status] || classes['PENDENTE'];

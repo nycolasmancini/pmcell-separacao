@@ -36,6 +36,14 @@
    Card Components
    =========================== */
 
+/* Card Link Wrapper */
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  cursor: pointer;
+}
+
 /* Modern Card Base */
 .card-modern {
   background: white;
@@ -46,7 +54,7 @@
   position: relative;
 }
 
-.card-modern:hover {
+.card-link:hover .card-modern {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   transform: translateY(-2px);
 }

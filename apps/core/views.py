@@ -430,8 +430,8 @@ def dashboard(request):
             'data': pedido.data.strftime('%d/%m/%Y'),
             'data_criacao': pedido.data_criacao.strftime('%d/%m/%Y %H:%M'),
             'total_itens': total_itens,
-            'logistica': pedido.logistica,
-            'embalagem': pedido.embalagem,
+            'logistica': pedido.get_logistica_display() if pedido.logistica else "Não definida",
+            'embalagem': pedido.get_embalagem_display() if pedido.embalagem else "Embalagem padrão",
             'itens_separados': itens_completos,
             'porcentagem_separacao': round(porcentagem_separacao, 1),
         })

@@ -94,11 +94,11 @@ def broadcast_card_status_update(pedido):
         card_status_code, card_status_display = pedido.get_card_status()
 
         # Obter nomes únicos dos separadores (para badges no card)
-        separadores = list(
+        # Usar set() para garantir valores únicos
+        separadores = list(set(
             pedido.itens.filter(separado=True, separado_por__isnull=False)
             .values_list('separado_por__nome', flat=True)
-            .distinct()
-        )
+        ))
 
         return broadcast_to_websocket(
             "dashboard",
@@ -455,11 +455,11 @@ def dashboard(request):
         porcentagem_separacao = (itens_completos / total_itens * 100) if total_itens > 0 else 0
 
         # Obter nomes únicos dos separadores (para badges no card)
-        separadores = list(
+        # Usar set() para garantir valores únicos
+        separadores = list(set(
             itens.filter(separado=True, separado_por__isnull=False)
             .values_list('separado_por__nome', flat=True)
-            .distinct()
-        )
+        ))
 
         # Obter card_status baseado no estado dos itens
         card_status_code, card_status_display = pedido.get_card_status()

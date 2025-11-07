@@ -194,6 +194,9 @@ class PedidoDetalheWebSocket {
         }
 
         console.log(`[Statistics] Separados: ${separadosVerdes}, Substituídos: ${substituidosAzuis}, Em Compra: ${emCompraAmarelos}, Pendentes: ${pendentesCinza}, Total Completos: ${totalSeparados}/${allItems} (${progress}%)`);
+
+        // Trigger Alpine.js button visibility update
+        window.dispatchEvent(new CustomEvent('update-finalizar-visibility'));
     }
 
     handleItemEmCompra(item) {
@@ -455,6 +458,9 @@ function pedidoDetalheApp(pedidoId) {
         // Track separated items for dynamic styling
         itemsSeparados: [],
 
+        // Button visibility control
+        mostrarBotaoFinalizar: false,
+
         // Modals
         modalSubstituir: {
             show: false,
@@ -480,6 +486,37 @@ function pedidoDetalheApp(pedidoId) {
                     this.itemsSeparados.push(itemId);
                 }
             });
+
+            // Set initial button visibility
+            this.$nextTick(() => {
+                this.updateFinalizarButtonVisibility();
+            });
+
+            // Listen for visibility update events from WebSocket
+            window.addEventListener('update-finalizar-visibility', () => {
+                this.updateFinalizarButtonVisibility();
+            });
+        },
+
+        // Update button visibility based on current DOM state
+        updateFinalizarButtonVisibility() {
+            // Calcular visibilidade do botão Finalizar baseado no estado atual do DOM
+            const allItems = document.querySelectorAll('tr[data-item-id]').length;
+            const separadosVerdes = document.querySelectorAll('.status-badge.bg-green-100').length;
+            const emCompraAmarelos = document.querySelectorAll('.status-badge.bg-yellow-100').length;
+
+            // Calcular progresso
+            const progress = allItems > 0 ? Math.round((separadosVerdes / allItems) * 100) : 0;
+
+            // Botão deve aparecer quando:
+            // 1. Progresso = 100% (todos itens separados ou substituídos)
+            // 2. Nenhum item em compra pendente
+            // 3. Há itens no pedido
+            const deveExibir = progress >= 100 && emCompraAmarelos === 0 && allItems > 0;
+
+            // Atualizar propriedade reativa
+            this.mostrarBotaoFinalizar = deveExibir;
+            console.log(`[Button Visibility] Progress: ${progress}%, Em Compra: ${emCompraAmarelos}, Total Items: ${allItems}, Show Button: ${deveExibir}`);
         },
 
         // Handle checkbox change for item separation

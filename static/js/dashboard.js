@@ -68,7 +68,7 @@ class DashboardWebSocket {
                     break;
 
                 case 'card_status_updated':
-                    this.handleCardStatusUpdated(data.pedido_id, data.card_status, data.card_status_display, data.separadores);
+                    this.handleCardStatusUpdated(data.pedido_id, data.card_status, data.card_status_display, data.separadores, data.card_status_priority);
                     break;
 
                 case 'pong':
@@ -231,8 +231,8 @@ class DashboardWebSocket {
         // (adicionar mais lógica de atualização conforme FASE 5)
     }
 
-    handleCardStatusUpdated(pedidoId, cardStatus, cardStatusDisplay, separadores) {
-        console.log('[Dashboard] Card status updated:', pedidoId, cardStatus, cardStatusDisplay, separadores);
+    handleCardStatusUpdated(pedidoId, cardStatus, cardStatusDisplay, separadores, cardStatusPriority) {
+        console.log('[Dashboard] Card status updated:', pedidoId, cardStatus, cardStatusDisplay, 'priority:', cardStatusPriority, separadores);
 
         const card = document.querySelector(`[data-pedido-id="${pedidoId}"]`);
         if (!card) {
@@ -264,6 +264,9 @@ class DashboardWebSocket {
 
         // Update separator badges
         this.updateSeparatorBadges(card, separadores);
+
+        // Reposition card based on new priority (mandatory status-based ordering)
+        this.repositionCard(card, cardStatus, cardStatusPriority);
 
         // Add pulse animation for visual feedback
         card.classList.add('pulse-once');
@@ -313,6 +316,89 @@ class DashboardWebSocket {
         });
 
         console.log(`[Dashboard] Badges de separadores atualizados: ${separadores.join(', ')}`);
+    }
+
+    getStatusPriority(cardStatus) {
+        /**
+         * Retorna a prioridade numérica do status para ordenação.
+         * Menor número = maior prioridade (aparece primeiro).
+         *
+         * Ordem: NAO_INICIADO (1) -> AGUARDANDO_COMPRA (2) -> EM_SEPARACAO (3) -> CONCLUIDO (4)
+         */
+        const priorityMap = {
+            'NAO_INICIADO': 1,        // Pendente - TOPO
+            'AGUARDANDO_COMPRA': 2,    // Comprar - MEIO
+            'EM_SEPARACAO': 3,         // Separados - FUNDO
+            'CONCLUIDO': 4             // Separados - FUNDO
+        };
+        return priorityMap[cardStatus] || 999;
+    }
+
+    repositionCard(card, newCardStatus, newPriority) {
+        /**
+         * Reposiciona um card no container baseado na nova prioridade de status.
+         * Move o card com animação suave para sua posição correta.
+         */
+        const container = document.getElementById('pedidos-container');
+        if (!container) {
+            console.warn('[Dashboard] Container de pedidos não encontrado para reposicionamento');
+            return;
+        }
+
+        // Atualizar prioridade no data attribute
+        const priority = newPriority || this.getStatusPriority(newCardStatus);
+        card.dataset.cardStatusPriority = priority;
+
+        // Obter todos os cards (exceto o atual)
+        const allCards = Array.from(container.querySelectorAll('.card-modern'));
+        let insertBeforeCard = null;
+
+        // Encontrar a posição correta baseada na prioridade
+        for (const otherCard of allCards) {
+            if (otherCard === card) continue;
+
+            const otherPriority = parseInt(otherCard.dataset.cardStatusPriority) || 999;
+
+            // Se encontrou um card com prioridade MENOR (número maior), inserir antes dele
+            if (otherPriority > priority) {
+                insertBeforeCard = otherCard;
+                break;
+            }
+        }
+
+        // Verificar se já está na posição correta
+        const currentNext = card.nextElementSibling;
+        if (insertBeforeCard === currentNext) {
+            console.log(`[Dashboard] Card #${card.dataset.pedidoId} já está na posição correta`);
+            return;
+        }
+
+        // Aplicar animação de transição
+        card.style.transition = 'all 0.3s ease';
+
+        // Reposicionar o card
+        if (insertBeforeCard) {
+            // Obter o elemento pai (a tag <a>)
+            const cardLink = card.closest('.card-link');
+            const insertBeforeLink = insertBeforeCard.closest('.card-link');
+            if (cardLink && insertBeforeLink) {
+                insertBeforeLink.parentNode.insertBefore(cardLink, insertBeforeLink);
+            }
+        } else {
+            // Mover para o final
+            const cardLink = card.closest('.card-link');
+            if (cardLink) {
+                container.appendChild(cardLink);
+            }
+        }
+
+        // Feedback visual
+        card.classList.add('repositioned-flash');
+        setTimeout(() => {
+            card.classList.remove('repositioned-flash');
+        }, 600);
+
+        console.log(`[Dashboard] Card #${card.dataset.pedidoId} reposicionado - Status: ${newCardStatus}, Prioridade: ${priority}`);
     }
 
     createPedidoCardHtml(pedido) {

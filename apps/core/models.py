@@ -278,6 +278,29 @@ class Pedido(models.Model):
         # Prioridade 4: Nenhum progresso
         return 'NAO_INICIADO', 'Não Iniciado'
 
+    def get_card_status_priority(self):
+        """
+        Retorna a prioridade numérica do status do card para ordenação.
+        Menor número = maior prioridade (aparece primeiro).
+
+        Ordem de exibição:
+        1. NAO_INICIADO (Pendente) - topo
+        2. AGUARDANDO_COMPRA (Comprar) - meio
+        3. EM_SEPARACAO (Separados) - fundo
+        4. CONCLUIDO (Separados) - fundo
+
+        Returns:
+            int: Prioridade do status (1-4)
+        """
+        card_status, _ = self.get_card_status()
+        priority_map = {
+            'NAO_INICIADO': 1,        # Pendente - TOPO
+            'AGUARDANDO_COMPRA': 2,    # Comprar - MEIO
+            'EM_SEPARACAO': 3,         # Separados - FUNDO
+            'CONCLUIDO': 4,            # Separados - FUNDO
+        }
+        return priority_map.get(card_status, 999)
+
     def get_card_status_css(self):
         """
         Retorna o card_status formatado para uso em classes CSS.

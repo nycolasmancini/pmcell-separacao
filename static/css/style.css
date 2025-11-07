@@ -433,6 +433,30 @@
 }
 
 /* ===========================
+   Card Repositioning Animations
+   =========================== */
+
+/* Flash animation when card is repositioned */
+.repositioned-flash {
+  animation: repositioned-flash 600ms ease-out;
+}
+
+@keyframes repositioned-flash {
+  0% {
+    background-color: #fff;
+    transform: scale(1);
+  }
+  50% {
+    background-color: #dbeafe;
+    transform: scale(1.02);
+  }
+  100% {
+    background-color: #fff;
+    transform: scale(1);
+  }
+}
+
+/* ===========================
    Dark Mode Support (Future)
    =========================== */
 

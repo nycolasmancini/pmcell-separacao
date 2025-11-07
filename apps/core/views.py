@@ -92,6 +92,7 @@ def broadcast_card_status_update(pedido):
     """
     try:
         card_status_code, card_status_display = pedido.get_card_status()
+        card_status_priority = pedido.get_card_status_priority()
 
         # Obter nomes únicos dos separadores (para badges no card)
         # Usar set() para garantir valores únicos
@@ -107,6 +108,7 @@ def broadcast_card_status_update(pedido):
                 "pedido_id": pedido.id,
                 "card_status": card_status_code,
                 "card_status_display": card_status_display,
+                "card_status_priority": card_status_priority,
                 "separadores": separadores,
             }
         )
@@ -427,11 +429,12 @@ def dashboard(request):
     from apps.core.utils import calcular_metricas_dia, formatar_tempo
 
     # Buscar apenas pedidos ativos (não finalizados e não deletados)
+    # Ordenação será feita em Python após calcular card_status_priority
     pedidos = Pedido.objects.filter(
         deletado=False
     ).exclude(
         status__in=['FINALIZADO', 'CANCELADO']
-    ).select_related('vendedor').order_by('-data_criacao')
+    ).select_related('vendedor').prefetch_related('itens')
 
     # Calcular métricas do dia
     metricas = calcular_metricas_dia()
@@ -464,6 +467,7 @@ def dashboard(request):
         # Obter card_status baseado no estado dos itens
         card_status_code, card_status_display = pedido.get_card_status()
         card_status_css = pedido.get_card_status_css()
+        card_status_priority = pedido.get_card_status_priority()
 
         pedidos_data.append({
             'id': pedido.id,
@@ -476,8 +480,10 @@ def dashboard(request):
             'card_status': card_status_code,
             'card_status_display': card_status_display,
             'card_status_css': card_status_css,
+            'card_status_priority': card_status_priority,
             'data': pedido.data.strftime('%d/%m/%Y'),
             'data_criacao': pedido.data_criacao.strftime('%d/%m/%Y %H:%M'),
+            'data_criacao_timestamp': pedido.data_criacao.timestamp(),
             'total_itens': total_itens,
             'logistica': pedido.get_logistica_display() if pedido.logistica else "Não definida",
             'embalagem': pedido.get_embalagem_display() if pedido.embalagem else "Embalagem padrão",
@@ -485,6 +491,11 @@ def dashboard(request):
             'porcentagem_separacao': round(porcentagem_separacao, 1),
             'separadores': separadores,
         })
+
+    # Ordenar pedidos por prioridade de status
+    # Ordem: NAO_INICIADO (1) -> AGUARDANDO_COMPRA (2) -> EM_SEPARACAO (3) -> CONCLUIDO (4)
+    # Ordenação secundária: mais recentes primeiro (data_criacao decrescente)
+    pedidos_data.sort(key=lambda p: (p['card_status_priority'], -p['data_criacao_timestamp']))
 
     # Calcular estatísticas de compras (para COMPRADORA e ADMIN)
     itens_aguardando_compra = 0

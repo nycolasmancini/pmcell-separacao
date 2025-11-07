@@ -10,21 +10,28 @@
     const CardProgress = {
         /**
          * Initialize all progress bars on the page
+         * DON'T call updateAllProgressBars on init - trust server-rendered widths
          */
         init: function() {
-            this.updateAllProgressBars();
+            // Skip updateAllProgressBars() - server already rendered correct widths
+            // Only setup listeners for real-time WebSocket updates
             this.setupWebSocketListeners();
             this.setupAnimations();
+
+            console.log('[CardProgress] Init complete - trusting server-rendered progress bars');
         },
 
         /**
          * Update all progress bars based on data attributes
+         * On initial page load, DON'T call this - trust server-rendered inline styles
+         * Only used for WebSocket real-time updates
          */
         updateAllProgressBars: function() {
             const progressBars = document.querySelectorAll('.progress-bar-fill');
             progressBars.forEach(bar => {
                 const progress = bar.dataset.progress || 0;
-                this.animateProgressBar(bar, progress);
+                // Force animate for real-time updates only
+                this.animateProgressBar(bar, progress, true);
             });
         },
 
@@ -242,15 +249,14 @@
         }
     };
 
-    // Initialize when DOM is ready AND after a brief delay for style computation
-    // The delay ensures that server-rendered inline styles (style="width: X%")
-    // are fully computed by the browser before JavaScript reads them
+    // Initialize when DOM is ready
+    // No delay needed - we trust server-rendered widths and don't read them
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => CardProgress.init(), 50);
+            CardProgress.init();
         });
     } else {
-        setTimeout(() => CardProgress.init(), 50);
+        CardProgress.init();
     }
 
     // Add custom styles for animations

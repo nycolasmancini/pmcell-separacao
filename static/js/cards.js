@@ -10,15 +10,37 @@
     const CardProgress = {
         /**
          * Initialize all progress bars on the page
-         * DON'T call updateAllProgressBars on init - trust server-rendered widths
+         * Initialize from DOM to prevent CSS rendering race conditions
          */
         init: function() {
-            // Skip updateAllProgressBars() - server already rendered correct widths
-            // Only setup listeners for real-time WebSocket updates
+            // Initialize progress bars from data attributes to prevent 100% default width bug
+            this.initializeProgressBarsFromDOM();
+            // Setup listeners for real-time WebSocket updates
             this.setupWebSocketListeners();
             this.setupAnimations();
 
-            console.log('[CardProgress] Init complete - trusting server-rendered progress bars');
+            console.log('[CardProgress] Init complete - progress bars initialized from DOM');
+        },
+
+        /**
+         * Initialize progress bars from DOM data attributes on page load
+         * Fixes bug where CSS defaults to 100% width before inline styles are applied
+         * Reads data-progress attribute and ensures style.width matches immediately
+         */
+        initializeProgressBarsFromDOM: function() {
+            const progressBars = document.querySelectorAll('.progress-bar-fill');
+            let initializedCount = 0;
+
+            progressBars.forEach(bar => {
+                const progress = parseFloat(bar.dataset.progress) || 0;
+                // Force set inline style to match data attribute
+                // This overrides any default CSS behavior and ensures correct width on page load
+                bar.style.width = `${progress}%`;
+                initializedCount++;
+                console.log(`[CardProgress] Initialized bar to ${progress}%`);
+            });
+
+            console.log(`[CardProgress] Initialized ${initializedCount} progress bars from DOM`);
         },
 
         /**

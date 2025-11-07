@@ -493,9 +493,15 @@ def dashboard(request):
         })
 
     # Ordenar pedidos por prioridade de status
-    # Ordem: NAO_INICIADO (1) -> AGUARDANDO_COMPRA (2) -> EM_SEPARACAO (3) -> CONCLUIDO (4)
+    # Ordem: NAO_INICIADO (1) -> AGUARDANDO_COMPRA (2) -> EM_SEPARACAO/CONCLUIDO (3 - mesma prioridade)
     # Ordenação secundária: mais recentes primeiro (data_criacao decrescente)
     pedidos_data.sort(key=lambda p: (p['card_status_priority'], -p['data_criacao_timestamp']))
+
+    # Debug: log da ordenação
+    print("\n=== DEBUG: Dashboard Ordering ===")
+    for idx, p in enumerate(pedidos_data):
+        print(f"{idx+1}. #{p['numero_orcamento']} - Status: {p['card_status']} - Priority: {p['card_status_priority']} - Created: {p['data_criacao']}")
+    print("=================================\n")
 
     # Calcular estatísticas de compras (para COMPRADORA e ADMIN)
     itens_aguardando_compra = 0

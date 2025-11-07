@@ -323,13 +323,13 @@ class DashboardWebSocket {
          * Retorna a prioridade numérica do status para ordenação.
          * Menor número = maior prioridade (aparece primeiro).
          *
-         * Ordem: NAO_INICIADO (1) -> AGUARDANDO_COMPRA (2) -> EM_SEPARACAO (3) -> CONCLUIDO (4)
+         * Ordem: NAO_INICIADO (1) -> AGUARDANDO_COMPRA (2) -> EM_SEPARACAO/CONCLUIDO (3)
          */
         const priorityMap = {
             'NAO_INICIADO': 1,        // Pendente - TOPO
             'AGUARDANDO_COMPRA': 2,    // Comprar - MEIO
-            'EM_SEPARACAO': 3,         // Separados - FUNDO
-            'CONCLUIDO': 4             // Separados - FUNDO
+            'EM_SEPARACAO': 3,         // Separados - FUNDO (mesma prioridade)
+            'CONCLUIDO': 3             // Separados - FUNDO (mesma prioridade)
         };
         return priorityMap[cardStatus] || 999;
     }
@@ -533,6 +533,22 @@ let dashboardWS = null;
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[Dashboard] Inicializando WebSocket...');
     dashboardWS = new DashboardWebSocket();
+
+    // Debug: log inicial da ordenação dos cards
+    const debugInitialOrder = () => {
+        console.log('\n=== DEBUG: Initial Card Order ===');
+        const cards = document.querySelectorAll('.card-modern');
+        cards.forEach((card, idx) => {
+            const numero = card.closest('.card-link').querySelector('.card-number')?.textContent;
+            const status = card.dataset.cardStatus;
+            const priority = card.dataset.cardStatusPriority;
+            console.log(`${idx+1}. ${numero} - Status: ${status} - Priority: ${priority}`);
+        });
+        console.log('=================================\n');
+    };
+
+    // Aguardar um pouco para garantir que os cards foram renderizados
+    setTimeout(debugInitialOrder, 100);
 });
 
 // Fechar conexão ao sair da página

@@ -559,6 +559,25 @@ def pedido_detalhe_view(request, pedido_id):
         (request.user.tipo == 'VENDEDOR' and pedido.vendedor == request.user)
     )
 
+    # Calcular card_status para exibir no header (igual ao dashboard)
+    card_status_code, card_status_display = pedido.get_card_status()
+
+    # Definir CSS class baseado no card_status
+    card_status_css_map = {
+        'NAO_INICIADO': 'nao-iniciado',
+        'EM_SEPARACAO': 'em-separacao',
+        'AGUARDANDO_COMPRA': 'aguardando-compra',
+        'CONCLUIDO': 'concluido',
+    }
+    card_status_css = card_status_css_map.get(card_status_code, 'nao-iniciado')
+
+    # Extrair nomes únicos de separadores (igual ao dashboard)
+    separadores = list(set(
+        item.separado_por.nome
+        for item in itens
+        if item.separado and item.separado_por
+    ))
+
     context = {
         'pedido': pedido,
         'itens': itens,
@@ -570,6 +589,12 @@ def pedido_detalhe_view(request, pedido_id):
         'progresso_separacao': round(progresso_separacao, 1),
         'pode_finalizar': pode_finalizar,
         'pode_deletar': pode_deletar,
+        # Novos dados para o header
+        'card_status': card_status_code,
+        'card_status_display': card_status_display,
+        'card_status_css': card_status_css,
+        'separadores': separadores,
+        'porcentagem_separacao': round(progresso_separacao, 1),  # Alias para compatibilidade
     }
 
     return render(request, 'pedido_detalhe.html', context)

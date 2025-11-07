@@ -10,56 +10,59 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8" x-data="pedidoDetalheApp({{ pedido.id }})">
 
-    <!-- Header -->
-    <div class="mb-6 flex justify-between items-center">
-        <div>
-            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+    <!-- Header Minimalista -->
+    <div class="header-info-container mb-8 relative">
+        <!-- Linha colorida superior baseada no status -->
+        <div class="header-border-top bg-{{ card_status_css }}"></div>
+
+        <!-- Link voltar -->
+        <div class="mb-3">
+            <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800 text-sm">
                 ← Voltar ao Dashboard
             </a>
-            <h1 class="text-3xl font-bold text-gray-800">
-                Pedido #{{ pedido.numero_orcamento }}
-                <span id="ws-status-indicator" class="inline-block w-2 h-2 bg-gray-400 rounded-full ml-2" title="Conectando..."></span>
-            </h1>
-            <p class="text-gray-600 mt-1">Cliente: {{ pedido.nome_cliente }} ({{ pedido.codigo_cliente }})</p>
         </div>
 
-    </div>
-
-    <!-- Info Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <!-- Status -->
-        <div class="bg-white rounded-lg shadow p-4">
-            <p class="text-sm text-gray-500 font-medium mb-1">Status</p>
-            <p class="text-lg font-bold
-                {% if pedido.status == 'PENDENTE' %}text-gray-600
-                {% elif pedido.status == 'EM_SEPARACAO' %}text-blue-600
-                {% elif pedido.status == 'AGUARDANDO_COMPRA' %}text-yellow-600
-                {% elif pedido.status == 'FINALIZADO' %}text-green-600
-                {% else %}text-red-600{% endif %}">
-                {{ pedido.get_status_display }}
-            </p>
+        <!-- Número do pedido e Status -->
+        <div class="flex justify-between items-start mb-3">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl font-bold text-gray-800">#{{ pedido.numero_orcamento }}</span>
+                <span id="ws-status-indicator" class="inline-block w-2 h-2 bg-gray-400 rounded-full" title="Conectando..."></span>
+            </div>
+            <span class="status-badge-modern badge-{{ card_status_css }}">
+                {{ card_status_display }}
+            </span>
         </div>
 
-        <!-- Vendedor -->
-        <div class="bg-white rounded-lg shadow p-4">
-            <p class="text-sm text-gray-500 font-medium mb-1">Vendedor</p>
-            <p class="text-lg font-bold text-gray-800">{{ pedido.vendedor.nome }}</p>
+        <!-- Informações do pedido -->
+        <div class="space-y-1">
+            <p class="text-lg font-semibold text-gray-800">{{ pedido.nome_cliente }}</p>
+            <div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
+                <span><span class="font-medium">Vendedor:</span> {{ pedido.vendedor.nome }}</span>
+                <span><span class="font-medium">Logística:</span> {{ pedido.get_logistica_display }}</span>
+                <span><span class="font-medium">Embalagem:</span> {{ pedido.get_embalagem_display }}</span>
+                <span><span class="font-medium">Data:</span> {{ pedido.data|date:"d/m/Y" }}</span>
+            </div>
         </div>
 
-        <!-- Data -->
-        <div class="bg-white rounded-lg shadow p-4">
-            <p class="text-sm text-gray-500 font-medium mb-1">Data do Pedido</p>
-            <p class="text-lg font-bold text-gray-800">{{ pedido.data|date:"d/m/Y" }}</p>
+        <!-- Badges de separadores -->
+        {% if separadores %}
+        <div class="separator-badges-container mt-3">
+            {% for separador in separadores %}
+            <span class="separator-badge">{{ separador }}</span>
+            {% endfor %}
         </div>
+        {% endif %}
 
-        <!-- Progresso -->
-        <div class="bg-white rounded-lg shadow p-4">
-            <p class="text-sm text-gray-500 font-medium mb-1">Progresso</p>
-            <div class="flex items-center">
-                <div class="flex-grow bg-gray-200 rounded-full h-2 mr-2">
-                    <div class="bg-green-600 h-2 rounded-full transition-all duration-500 ease-out" style="width: {{ progresso_separacao }}%"></div>
+        <!-- Barra de progresso -->
+        <div class="progress-container mt-4">
+            <div class="progress-wrapper">
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill"
+                         style="width: {{ porcentagem_separacao|default:0 }}%"
+                         data-progress="{{ porcentagem_separacao|default:0 }}">
+                    </div>
                 </div>
-                <p class="text-sm font-bold text-gray-800">{{ progresso_separacao }}%</p>
+                <span class="progress-text">{{ porcentagem_separacao|default:0 }}%</span>
             </div>
         </div>
     </div>
@@ -81,27 +84,6 @@
         <div class="bg-white rounded-lg shadow p-4 text-center">
             <p class="text-2xl font-bold text-yellow-600">{{ itens_em_compra }}</p>
             <p class="text-sm text-gray-500">Em Compra</p>
-        </div>
-    </div>
-
-    <!-- Informações do Pedido -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Informações do Pedido</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <p class="text-sm text-gray-500">Logística:</p>
-                <p class="font-semibold text-gray-800">{{ pedido.get_logistica_display }}</p>
-            </div>
-            <div>
-                <p class="text-sm text-gray-500">Embalagem:</p>
-                <p class="font-semibold text-gray-800">{{ pedido.get_embalagem_display }}</p>
-            </div>
-            {% if pedido.observacoes %}
-            <div class="md:col-span-2">
-                <p class="text-sm text-gray-500">Observações:</p>
-                <p class="font-semibold text-gray-800">{{ pedido.observacoes }}</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 
@@ -333,6 +315,59 @@
 
 <style>
 [x-cloak] { display: none !important; }
+
+/* Header Minimalista Styles */
+.header-info-container {
+    position: relative;
+    padding-top: 0.5rem;
+}
+
+.header-border-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    border-radius: 2px 2px 0 0;
+}
+
+/* Status badge colors using the same as dashboard */
+.badge-nao-iniciado {
+    background-color: #E5E7EB;
+    color: #6B7280;
+}
+
+.badge-em-separacao {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+}
+
+.badge-aguardando-compra {
+    background-color: #FED7AA;
+    color: #9A3412;
+}
+
+.badge-concluido {
+    background-color: #D1FAE5;
+    color: #065F46;
+}
+
+/* Background colors for header border */
+.bg-nao-iniciado {
+    background-color: var(--status-nao-iniciado, #9CA3AF);
+}
+
+.bg-em-separacao {
+    background-color: var(--status-em-separacao, #60A5FA);
+}
+
+.bg-aguardando-compra {
+    background-color: var(--status-aguardando-compra, #FB923C);
+}
+
+.bg-concluido {
+    background-color: var(--status-concluido, #34D399);
+}
 
 /* Separated item row styling */
 .row-separated {

@@ -1058,6 +1058,9 @@ def unseparar_item_view(request, item_id):
         }
     )
 
+    # Broadcast card_status update
+    broadcast_card_status_update(pedido)
+
     logger.info(f"[UNSEPARAR ITEM] ✓ PROCESSO COMPLETO - Item {item.id} desseparado com sucesso, progresso: {porcentagem_separacao}%")
     return JsonResponse({
         'success': True,
@@ -1209,6 +1212,9 @@ def marcar_compra_view(request, item_id):
             }
         )
 
+        # Broadcast card_status update para cada pedido afetado
+        broadcast_card_status_update(p)
+
     return JsonResponse({
         'success': True,
         'itens_marcados': len(itens_marcados),
@@ -1308,6 +1314,9 @@ def substituir_item_view(request, item_id):
             }
         }
     )
+
+    # Broadcast card_status update
+    broadcast_card_status_update(pedido)
 
     return JsonResponse({
         'success': True,

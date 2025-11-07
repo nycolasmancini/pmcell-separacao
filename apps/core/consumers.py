@@ -94,6 +94,18 @@ class DashboardConsumer(AsyncWebsocketConsumer):
             'numero_orcamento': event.get('numero_orcamento', '')
         }))
 
+    async def card_status_updated(self, event):
+        """
+        Handler chamado quando o card_status de um pedido é atualizado.
+        Envia o novo status do card para o dashboard.
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'card_status_updated',
+            'pedido_id': event['pedido_id'],
+            'card_status': event['card_status'],
+            'card_status_display': event['card_status_display']
+        }))
+
 
 class PedidoDetalheConsumer(AsyncWebsocketConsumer):
     """

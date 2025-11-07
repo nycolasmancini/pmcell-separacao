@@ -67,6 +67,10 @@ class DashboardWebSocket {
                     this.handlePedidoFinalizado(data.pedido_id, data.numero_orcamento);
                     break;
 
+                case 'card_status_updated':
+                    this.handleCardStatusUpdated(data.pedido_id, data.card_status, data.card_status_display);
+                    break;
+
                 case 'pong':
                     // Resposta ao ping - conexão está ativa
                     break;
@@ -225,6 +229,44 @@ class DashboardWebSocket {
 
         // Atualizar outros campos conforme necessário
         // (adicionar mais lógica de atualização conforme FASE 5)
+    }
+
+    handleCardStatusUpdated(pedidoId, cardStatus, cardStatusDisplay) {
+        console.log('[Dashboard] Card status updated:', pedidoId, cardStatus, cardStatusDisplay);
+
+        const card = document.querySelector(`[data-pedido-id="${pedidoId}"]`);
+        if (!card) {
+            console.warn(`[Dashboard] Card não encontrado para pedido ${pedidoId}`);
+            return;
+        }
+
+        // Update data attribute
+        card.dataset.cardStatus = cardStatus;
+
+        // Update border - remove all card-border-* classes and add new one
+        const borderTop = card.querySelector('.card-border-top');
+        if (borderTop) {
+            borderTop.className = borderTop.className.replace(/card-border-\S+/g, '').trim();
+            const borderClass = 'card-border-' + cardStatus.toLowerCase().replace(/_/g, '-');
+            borderTop.className = 'card-border-top ' + borderClass;
+            console.log(`[Dashboard] Border atualizado: ${borderClass}`);
+        }
+
+        // Update status badge - remove all badge-* classes and add new one
+        const statusBadge = card.querySelector('[data-status]');
+        if (statusBadge) {
+            statusBadge.textContent = cardStatusDisplay;
+            statusBadge.className = statusBadge.className.replace(/badge-\S+/g, '').trim();
+            const badgeClass = 'badge-' + cardStatus.toLowerCase().replace(/_/g, '-');
+            statusBadge.className = 'status-badge-modern ' + badgeClass;
+            console.log(`[Dashboard] Badge atualizado: ${badgeClass}, texto: ${cardStatusDisplay}`);
+        }
+
+        // Add pulse animation for visual feedback
+        card.classList.add('pulse-once');
+        setTimeout(() => {
+            card.classList.remove('pulse-once');
+        }, 1000);
     }
 
     createPedidoCardHtml(pedido) {

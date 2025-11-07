@@ -103,7 +103,8 @@ class DashboardConsumer(AsyncWebsocketConsumer):
             'type': 'card_status_updated',
             'pedido_id': event['pedido_id'],
             'card_status': event['card_status'],
-            'card_status_display': event['card_status_display']
+            'card_status_display': event['card_status_display'],
+            'separadores': event.get('separadores', [])
         }))
 
 

@@ -68,7 +68,7 @@ class DashboardWebSocket {
                     break;
 
                 case 'card_status_updated':
-                    this.handleCardStatusUpdated(data.pedido_id, data.card_status, data.card_status_display);
+                    this.handleCardStatusUpdated(data.pedido_id, data.card_status, data.card_status_display, data.separadores);
                     break;
 
                 case 'pong':
@@ -231,8 +231,8 @@ class DashboardWebSocket {
         // (adicionar mais lógica de atualização conforme FASE 5)
     }
 
-    handleCardStatusUpdated(pedidoId, cardStatus, cardStatusDisplay) {
-        console.log('[Dashboard] Card status updated:', pedidoId, cardStatus, cardStatusDisplay);
+    handleCardStatusUpdated(pedidoId, cardStatus, cardStatusDisplay, separadores) {
+        console.log('[Dashboard] Card status updated:', pedidoId, cardStatus, cardStatusDisplay, separadores);
 
         const card = document.querySelector(`[data-pedido-id="${pedidoId}"]`);
         if (!card) {
@@ -262,11 +262,57 @@ class DashboardWebSocket {
             console.log(`[Dashboard] Badge atualizado: ${badgeClass}, texto: ${cardStatusDisplay}`);
         }
 
+        // Update separator badges
+        this.updateSeparatorBadges(card, separadores);
+
         // Add pulse animation for visual feedback
         card.classList.add('pulse-once');
         setTimeout(() => {
             card.classList.remove('pulse-once');
         }, 1000);
+    }
+
+    updateSeparatorBadges(card, separadores) {
+        // Find existing separator badges container
+        let container = card.querySelector('.separator-badges-container');
+
+        // If no separators, remove container if it exists
+        if (!separadores || separadores.length === 0) {
+            if (container) {
+                container.remove();
+                console.log('[Dashboard] Removido container de badges (sem separadores)');
+            }
+            return;
+        }
+
+        // Create container if it doesn't exist
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'separator-badges-container';
+
+            // Insert before progress container
+            const progressContainer = card.querySelector('.progress-container');
+            if (progressContainer) {
+                progressContainer.parentNode.insertBefore(container, progressContainer);
+            } else {
+                // Fallback: insert at end of card-content
+                const cardContent = card.querySelector('.card-content');
+                if (cardContent) {
+                    cardContent.appendChild(container);
+                }
+            }
+        }
+
+        // Clear and rebuild badges
+        container.innerHTML = '';
+        separadores.forEach(separador => {
+            const badge = document.createElement('span');
+            badge.className = 'separator-badge';
+            badge.textContent = separador;
+            container.appendChild(badge);
+        });
+
+        console.log(`[Dashboard] Badges de separadores atualizados: ${separadores.join(', ')}`);
     }
 
     createPedidoCardHtml(pedido) {

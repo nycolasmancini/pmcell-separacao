@@ -206,6 +206,23 @@ class DashboardWebSocket {
             statusBadge.className = this.getStatusBadgeClass(pedido.status);
         }
 
+        // Atualizar barra de progresso e porcentagem
+        if (pedido.porcentagem_separacao !== undefined) {
+            const progressBar = cardElement.querySelector('.progress-bar-fill');
+            const progressText = cardElement.querySelector('.progress-text');
+
+            if (progressBar) {
+                progressBar.style.width = `${pedido.porcentagem_separacao}%`;
+                progressBar.dataset.progress = pedido.porcentagem_separacao;
+            }
+
+            if (progressText) {
+                progressText.textContent = `${pedido.porcentagem_separacao}%`;
+            }
+
+            console.log(`[Dashboard] Progresso atualizado para pedido ${pedido.id}: ${pedido.porcentagem_separacao}%`);
+        }
+
         // Atualizar outros campos conforme necessário
         // (adicionar mais lógica de atualização conforme FASE 5)
     }

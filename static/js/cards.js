@@ -30,18 +30,24 @@
 
         /**
          * Animate a single progress bar
+         * Don't reset bars that already have width from server rendering
          */
         animateProgressBar: function(bar, targetProgress) {
-            // Reset to 0 for animation
-            bar.style.width = '0%';
+            // Get current width (from inline style or computed)
+            const currentWidth = parseFloat(bar.style.width) || 0;
 
-            // Trigger reflow
-            void bar.offsetWidth;
-
-            // Animate to target
-            setTimeout(() => {
+            // Only animate from 0 if bar is currently empty
+            // This prevents overriding server-rendered widths
+            if (currentWidth === 0) {
+                bar.style.width = '0%';
+                void bar.offsetWidth;
+                setTimeout(() => {
+                    bar.style.width = `${targetProgress}%`;
+                }, 100);
+            } else {
+                // Bar already has width from server, just ensure it matches target
                 bar.style.width = `${targetProgress}%`;
-            }, 100);
+            }
         },
 
         /**

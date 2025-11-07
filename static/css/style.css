@@ -1,5 +1,5 @@
 /* ===========================
-   PMCell - Sistema de Separação de Pedidos
+   PMCell - Sistema de Separaï¿½ï¿½o de Pedidos
    Card Design System Styles
    =========================== */
 
@@ -193,6 +193,15 @@
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  /* Ensure minimum visibility for small percentages */
+  min-width: 3px;
+}
+
+/* Hide completely only if 0% */
+.progress-bar-fill[data-progress="0"],
+.progress-bar-fill[style*="width: 0%"] {
+  min-width: 0;
+  display: none;
 }
 
 /* Animated shine effect for progress bar */

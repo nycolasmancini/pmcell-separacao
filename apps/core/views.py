@@ -844,6 +844,11 @@ def separar_item_view(request, item_id):
         }
     )
 
+    # Calcular porcentagem de separação para atualização em tempo real
+    itens_separados_count = pedido.itens.filter(separado=True).count()
+    total_itens_count = pedido.itens.count()
+    porcentagem_separacao = round((itens_separados_count / total_itens_count * 100), 1) if total_itens_count > 0 else 0
+
     # Broadcast para dashboard (pedido atualizado)
     broadcast_to_websocket(
         "dashboard",
@@ -852,7 +857,8 @@ def separar_item_view(request, item_id):
             "pedido": {
                 "id": pedido.id,
                 "numero_orcamento": pedido.numero_orcamento,
-                "status": pedido.status
+                "status": pedido.status,
+                "porcentagem_separacao": porcentagem_separacao
             }
         }
     )
@@ -873,13 +879,14 @@ def separar_item_view(request, item_id):
             }
         )
 
-    logger.info(f"[SEPARAR ITEM] ✓ PROCESSO COMPLETO - Item {item.id} separado com sucesso")
+    logger.info(f"[SEPARAR ITEM] ✓ PROCESSO COMPLETO - Item {item.id} separado com sucesso, progresso: {porcentagem_separacao}%")
     return JsonResponse({
         'success': True,
         'item_id': item.id,
         'separado_por': request.user.nome,
         'separado_em': item.separado_em.strftime('%d/%m/%Y %H:%M'),
-        'pedido_status': pedido.status
+        'pedido_status': pedido.status,
+        'porcentagem_separacao': porcentagem_separacao
     })
 
 
@@ -993,6 +1000,11 @@ def unseparar_item_view(request, item_id):
         }
     )
 
+    # Calcular porcentagem de separação para atualização em tempo real
+    itens_separados_count = pedido.itens.filter(separado=True).count()
+    total_itens_count = pedido.itens.count()
+    porcentagem_separacao = round((itens_separados_count / total_itens_count * 100), 1) if total_itens_count > 0 else 0
+
     # Broadcast para dashboard (pedido atualizado)
     broadcast_to_websocket(
         "dashboard",
@@ -1001,16 +1013,18 @@ def unseparar_item_view(request, item_id):
             "pedido": {
                 "id": pedido.id,
                 "numero_orcamento": pedido.numero_orcamento,
-                "status": pedido.status
+                "status": pedido.status,
+                "porcentagem_separacao": porcentagem_separacao
             }
         }
     )
 
-    logger.info(f"[UNSEPARAR ITEM] ✓ PROCESSO COMPLETO - Item {item.id} desseparado com sucesso")
+    logger.info(f"[UNSEPARAR ITEM] ✓ PROCESSO COMPLETO - Item {item.id} desseparado com sucesso, progresso: {porcentagem_separacao}%")
     return JsonResponse({
         'success': True,
         'item_id': item.id,
-        'pedido_status': pedido.status
+        'pedido_status': pedido.status,
+        'porcentagem_separacao': porcentagem_separacao
     })
 
 
@@ -1138,6 +1152,11 @@ def marcar_compra_view(request, item_id):
     # Broadcast para dashboard
     for pedido_id in pedidos_afetados:
         p = Pedido.objects.get(id=pedido_id)
+        # Calcular porcentagem de separação
+        itens_separados_count = p.itens.filter(separado=True).count()
+        total_itens_count = p.itens.count()
+        porcentagem_separacao = round((itens_separados_count / total_itens_count * 100), 1) if total_itens_count > 0 else 0
+
         broadcast_to_websocket(
             "dashboard",
             "pedido_atualizado",
@@ -1145,7 +1164,8 @@ def marcar_compra_view(request, item_id):
                 "pedido": {
                     "id": p.id,
                     "numero_orcamento": p.numero_orcamento,
-                    "status": p.status
+                    "status": p.status,
+                    "porcentagem_separacao": porcentagem_separacao
                 }
             }
         )
@@ -1231,6 +1251,11 @@ def substituir_item_view(request, item_id):
         }
     )
 
+    # Calcular porcentagem de separação para atualização em tempo real
+    itens_separados_count = pedido.itens.filter(separado=True).count()
+    total_itens_count = pedido.itens.count()
+    porcentagem_separacao = round((itens_separados_count / total_itens_count * 100), 1) if total_itens_count > 0 else 0
+
     # Broadcast para dashboard
     broadcast_to_websocket(
         "dashboard",
@@ -1239,7 +1264,8 @@ def substituir_item_view(request, item_id):
             "pedido": {
                 "id": pedido.id,
                 "numero_orcamento": pedido.numero_orcamento,
-                "status": pedido.status
+                "status": pedido.status,
+                "porcentagem_separacao": porcentagem_separacao
             }
         }
     )
@@ -1248,7 +1274,8 @@ def substituir_item_view(request, item_id):
         'success': True,
         'item_id': item.id,
         'produto_substituto': item.produto_substituto,
-        'pedido_status': pedido.status
+        'pedido_status': pedido.status,
+        'porcentagem_separacao': porcentagem_separacao
     })
 
 

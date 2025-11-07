@@ -92,6 +92,14 @@ def broadcast_card_status_update(pedido):
     """
     try:
         card_status_code, card_status_display = pedido.get_card_status()
+
+        # Obter nomes únicos dos separadores (para badges no card)
+        separadores = list(
+            pedido.itens.filter(separado=True, separado_por__isnull=False)
+            .values_list('separado_por__nome', flat=True)
+            .distinct()
+        )
+
         return broadcast_to_websocket(
             "dashboard",
             "card_status_updated",
@@ -99,6 +107,7 @@ def broadcast_card_status_update(pedido):
                 "pedido_id": pedido.id,
                 "card_status": card_status_code,
                 "card_status_display": card_status_display,
+                "separadores": separadores,
             }
         )
     except Exception as e:
@@ -445,6 +454,13 @@ def dashboard(request):
         itens_completos = itens_separados
         porcentagem_separacao = (itens_completos / total_itens * 100) if total_itens > 0 else 0
 
+        # Obter nomes únicos dos separadores (para badges no card)
+        separadores = list(
+            itens.filter(separado=True, separado_por__isnull=False)
+            .values_list('separado_por__nome', flat=True)
+            .distinct()
+        )
+
         # Obter card_status baseado no estado dos itens
         card_status_code, card_status_display = pedido.get_card_status()
         card_status_css = pedido.get_card_status_css()
@@ -467,6 +483,7 @@ def dashboard(request):
             'embalagem': pedido.get_embalagem_display() if pedido.embalagem else "Embalagem padrão",
             'itens_separados': itens_completos,
             'porcentagem_separacao': round(porcentagem_separacao, 1),
+            'separadores': separadores,
         })
 
     # Calcular estatísticas de compras (para COMPRADORA e ADMIN)

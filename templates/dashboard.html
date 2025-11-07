@@ -225,6 +225,15 @@
                             </p>
                         </div>
 
+                        <!-- Badges de Separadores -->
+                        {% if pedido.separadores %}
+                        <div class="separator-badges-container">
+                            {% for separador in pedido.separadores %}
+                            <span class="separator-badge">{{ separador }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
                         <!-- Barra de Progresso -->
                         <div class="progress-container">
                             <div class="progress-wrapper">

@@ -6,23 +6,29 @@
 /* Root Variables */
 :root {
   /* Status Colors */
+  --status-nao-iniciado: #9CA3AF;
   --status-pendente: #FCD34D;
   --status-em-separacao: #60A5FA;
   --status-aguardando-compra: #FB923C;
+  --status-concluido: #34D399;
   --status-finalizado: #34D399;
   --status-cancelado: #F87171;
 
   /* Background Colors for Status */
+  --bg-nao-iniciado: #F3F4F6;
   --bg-pendente: #FEF3C7;
   --bg-em-separacao: #DBEAFE;
   --bg-aguardando-compra: #FED7AA;
+  --bg-concluido: #D1FAE5;
   --bg-finalizado: #D1FAE5;
   --bg-cancelado: #FEE2E2;
 
   /* Text Colors for Status */
+  --text-nao-iniciado: #4B5563;
   --text-pendente: #92400E;
   --text-em-separacao: #1E40AF;
   --text-aguardando-compra: #9A3412;
+  --text-concluido: #065F46;
   --text-finalizado: #065F46;
   --text-cancelado: #991B1B;
 
@@ -69,6 +75,10 @@
   transition: background-color 0.3s ease;
 }
 
+.card-border-nao-iniciado {
+  background-color: var(--status-nao-iniciado);
+}
+
 .card-border-pendente {
   background-color: var(--status-pendente);
 }
@@ -79,6 +89,10 @@
 
 .card-border-aguardando-compra {
   background-color: var(--status-aguardando-compra);
+}
+
+.card-border-concluido {
+  background-color: var(--status-concluido);
 }
 
 .card-border-finalizado {
@@ -120,6 +134,11 @@
   transition: all 0.2s ease;
 }
 
+.badge-nao-iniciado {
+  background-color: var(--bg-nao-iniciado);
+  color: var(--text-nao-iniciado);
+}
+
 .badge-pendente {
   background-color: var(--bg-pendente);
   color: var(--text-pendente);
@@ -133,6 +152,11 @@
 .badge-aguardando-compra {
   background-color: var(--bg-aguardando-compra);
   color: var(--text-aguardando-compra);
+}
+
+.badge-concluido {
+  background-color: var(--bg-concluido);
+  color: var(--text-concluido);
 }
 
 .badge-finalizado {

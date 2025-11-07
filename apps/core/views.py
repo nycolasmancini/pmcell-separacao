@@ -80,6 +80,32 @@ def broadcast_to_websocket(group_name, message_type, data):
         return False
 
 
+def broadcast_card_status_update(pedido):
+    """
+    Broadcasts card_status update to dashboard
+
+    Args:
+        pedido: Pedido instance
+
+    Returns:
+        True if broadcast was successful, False otherwise
+    """
+    try:
+        card_status_code, card_status_display = pedido.get_card_status()
+        return broadcast_to_websocket(
+            "dashboard",
+            "card_status_updated",
+            {
+                "pedido_id": pedido.id,
+                "card_status": card_status_code,
+                "card_status_display": card_status_display,
+            }
+        )
+    except Exception as e:
+        logger.error(f"[WebSocket] Failed to broadcast card_status for pedido {pedido.id}: {e}")
+        return False
+
+
 # Cache para rate limiting (em memória)
 # Estrutura: {'numero_login': {'tentativas': int, 'primeiro_timestamp': datetime}}
 RATE_LIMIT_CACHE = {}
@@ -419,6 +445,9 @@ def dashboard(request):
         itens_completos = itens_separados
         porcentagem_separacao = (itens_completos / total_itens * 100) if total_itens > 0 else 0
 
+        # Obter card_status baseado no estado dos itens
+        card_status_code, card_status_display = pedido.get_card_status()
+
         pedidos_data.append({
             'id': pedido.id,
             'numero_orcamento': pedido.numero_orcamento,
@@ -427,6 +456,8 @@ def dashboard(request):
             'vendedor_id': pedido.vendedor.id,
             'status': pedido.status,
             'status_display': pedido.get_status_display(),
+            'card_status': card_status_code,
+            'card_status_display': card_status_display,
             'data': pedido.data.strftime('%d/%m/%Y'),
             'data_criacao': pedido.data_criacao.strftime('%d/%m/%Y %H:%M'),
             'total_itens': total_itens,
@@ -699,6 +730,9 @@ def confirmar_pedido_view(request):
                         data_formatada = pedido.data.strftime('%d/%m/%Y') if hasattr(pedido.data, 'strftime') else str(pedido.data)
                         data_criacao_formatada = pedido.data_criacao.strftime('%d/%m/%Y %H:%M') if hasattr(pedido.data_criacao, 'strftime') else str(pedido.data_criacao)
 
+                        # Obter card_status
+                        card_status_code, card_status_display = pedido.get_card_status()
+
                         async_to_sync(channel_layer.group_send)(
                             "dashboard",
                             {
@@ -711,6 +745,8 @@ def confirmar_pedido_view(request):
                                     "vendedor_id": pedido.vendedor.id,
                                     "status": pedido.status,
                                     "status_display": pedido.get_status_display(),
+                                    "card_status": card_status_code,
+                                    "card_status_display": card_status_display,
                                     "data": data_formatada,
                                     "data_criacao": data_criacao_formatada,
                                     "total_itens": pedido.itens.count(),
@@ -862,6 +898,9 @@ def separar_item_view(request, item_id):
             }
         }
     )
+
+    # Broadcast card_status update
+    broadcast_card_status_update(pedido)
 
     # Se estava em compra, broadcast para painel de compras
     if estava_em_compra:

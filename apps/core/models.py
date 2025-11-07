@@ -238,6 +238,46 @@ class Pedido(models.Model):
 
         return True, 'OK'
 
+    def get_card_status(self):
+        """
+        Retorna o status do card baseado no estado dos itens.
+        Prioridade:
+        1. AGUARDANDO_COMPRA - Se qualquer item está em compra (em_compra=True)
+        2. CONCLUIDO - Se 100% dos itens estão (separado OU substituido OU compra_realizada)
+        3. EM_SEPARACAO - Se qualquer item foi separado/substituído
+        4. NAO_INICIADO - Nenhum progresso ainda
+
+        Returns:
+            tuple: (status_code, status_display)
+        """
+        itens = self.itens.all()
+
+        if not itens.exists():
+            return 'NAO_INICIADO', 'Não Iniciado'
+
+        total_itens = itens.count()
+
+        # Prioridade 1: Verifica se algum item está em compra
+        if itens.filter(em_compra=True).exists():
+            return 'AGUARDANDO_COMPRA', 'Aguardando Compra'
+
+        # Conta itens concluídos: separado OU substituído OU compra_realizada
+        from django.db.models import Q
+        itens_concluidos = itens.filter(
+            Q(separado=True) | Q(substituido=True) | Q(compra_realizada=True)
+        ).count()
+
+        # Prioridade 2: Verifica se está 100% concluído
+        if itens_concluidos == total_itens:
+            return 'CONCLUIDO', 'Concluído'
+
+        # Prioridade 3: Verifica se há algum progresso
+        if itens_concluidos > 0:
+            return 'EM_SEPARACAO', 'Em Separação'
+
+        # Prioridade 4: Nenhum progresso
+        return 'NAO_INICIADO', 'Não Iniciado'
+
 
 class Produto(models.Model):
     """Modelo de Produto"""

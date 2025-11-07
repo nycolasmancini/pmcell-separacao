@@ -415,7 +415,8 @@ def dashboard(request):
         total_itens = itens.count()
         itens_separados = itens.filter(separado=True).count()
         itens_substituidos = itens.filter(substituido=True).count()
-        itens_completos = itens_separados + itens_substituidos
+        # Substituídos já são contados como separados, não somar duas vezes
+        itens_completos = itens_separados
         porcentagem_separacao = (itens_completos / total_itens * 100) if total_itens > 0 else 0
 
         pedidos_data.append({
@@ -476,9 +477,11 @@ def pedido_detalhe_view(request, pedido_id):
     itens_separados = itens.filter(separado=True).count()
     itens_substituidos = itens.filter(substituido=True).count()
     itens_em_compra = itens.filter(em_compra=True).count()
-    itens_pendentes = total_itens - itens_separados - itens_substituidos
+    # Substituídos já são contados como separados
+    itens_pendentes = total_itens - itens_separados
 
-    progresso_separacao = (itens_separados + itens_substituidos) / total_itens * 100 if total_itens > 0 else 0
+    # Substituídos já são contados como separados, não somar duas vezes
+    progresso_separacao = (itens_separados / total_itens * 100) if total_itens > 0 else 0
 
     # Verificar se pode finalizar
     pode_finalizar = pedido.pode_ser_finalizado()

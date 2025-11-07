@@ -152,10 +152,11 @@ class PedidoDetalheWebSocket {
         const emCompraAmarelos = document.querySelectorAll('.status-badge.bg-yellow-100').length; // 🛒 Em Compra
         const pendentesCinza = document.querySelectorAll('.status-badge.bg-gray-100').length; // ⏳ Pendente
 
-        // Itens separados = Separados (verde) + Substituídos (azul) - ambos contam como "completos"
-        const totalSeparados = separadosVerdes + substituidosAzuis;
+        // Itens separados = apenas os marcados como separado (substituídos já têm separado=True no backend)
+        // Não somar substituidosAzuis porque já estão incluídos nos separadosVerdes
+        const totalSeparados = separadosVerdes;
 
-        // Calcular progresso: (separados + substituídos) / total
+        // Calcular progresso: apenas separados / total (substituídos já incluídos)
         const progress = allItems > 0 ? Math.round((totalSeparados / allItems) * 100) : 0;
 
         // Atualizar card "Separados" (verde - inclui normais + substituídos)

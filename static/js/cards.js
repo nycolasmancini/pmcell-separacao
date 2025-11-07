@@ -46,10 +46,12 @@
 
         /**
          * Calculate progress percentage
+         * Note: substituídos já são contados como separados no backend, não somar duas vezes
          */
         calculateProgress: function(separated, substituted, total) {
             if (total === 0) return 0;
-            return Math.round(((separated + substituted) / total) * 100);
+            // Apenas usar 'separated' porque substituídos já têm separado=True
+            return Math.round((separated / total) * 100);
         },
 
         /**
@@ -69,7 +71,8 @@
             }
 
             if (progressText) {
-                progressText.textContent = `${separated + substituted}/${total} itens`;
+                const progress = this.calculateProgress(separated, substituted, total);
+                progressText.textContent = `${progress}%`;
             }
         },
 

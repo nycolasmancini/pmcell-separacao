@@ -243,7 +243,7 @@
                                      data-progress="{{ pedido.porcentagem_separacao|default:0 }}"></div>
                             </div>
                             <span class="progress-text">
-                                {{ pedido.itens_separados|default:0 }}/{{ pedido.total_itens }} itens
+                                {{ pedido.porcentagem_separacao|default:0 }}%
                             </span>
                         </div>
                     </div>

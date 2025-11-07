@@ -1,0 +1,399 @@
+/* ===========================
+   PMCell - Sistema de Separação de Pedidos
+   Card Design System Styles
+   =========================== */
+
+/* Root Variables */
+:root {
+  /* Status Colors */
+  --status-pendente: #FCD34D;
+  --status-em-separacao: #60A5FA;
+  --status-aguardando-compra: #FB923C;
+  --status-finalizado: #34D399;
+  --status-cancelado: #F87171;
+
+  /* Background Colors for Status */
+  --bg-pendente: #FEF3C7;
+  --bg-em-separacao: #DBEAFE;
+  --bg-aguardando-compra: #FED7AA;
+  --bg-finalizado: #D1FAE5;
+  --bg-cancelado: #FEE2E2;
+
+  /* Text Colors for Status */
+  --text-pendente: #92400E;
+  --text-em-separacao: #1E40AF;
+  --text-aguardando-compra: #9A3412;
+  --text-finalizado: #065F46;
+  --text-cancelado: #991B1B;
+
+  /* Progress Bar */
+  --progress-bg: #E5E7EB;
+  --progress-fill: #10B981;
+  --progress-text: #6B7280;
+}
+
+/* ===========================
+   Card Components
+   =========================== */
+
+/* Modern Card Base */
+.card-modern {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.card-modern:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+/* Top Border Based on Status */
+.card-border-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.card-border-pendente {
+  background-color: var(--status-pendente);
+}
+
+.card-border-em-separacao {
+  background-color: var(--status-em-separacao);
+}
+
+.card-border-aguardando-compra {
+  background-color: var(--status-aguardando-compra);
+}
+
+.card-border-finalizado {
+  background-color: var(--status-finalizado);
+}
+
+.card-border-cancelado {
+  background-color: var(--status-cancelado);
+}
+
+/* Card Content */
+.card-content {
+  padding: 1.5rem;
+  padding-top: 2rem; /* Extra space for top border */
+}
+
+/* Card Header */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.card-number {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+/* Status Badges */
+.status-badge-modern {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  transition: all 0.2s ease;
+}
+
+.badge-pendente {
+  background-color: var(--bg-pendente);
+  color: var(--text-pendente);
+}
+
+.badge-em-separacao {
+  background-color: var(--bg-em-separacao);
+  color: var(--text-em-separacao);
+}
+
+.badge-aguardando-compra {
+  background-color: var(--bg-aguardando-compra);
+  color: var(--text-aguardando-compra);
+}
+
+.badge-finalizado {
+  background-color: var(--bg-finalizado);
+  color: var(--text-finalizado);
+}
+
+.badge-cancelado {
+  background-color: var(--bg-cancelado);
+  color: var(--text-cancelado);
+}
+
+/* Card Info Section */
+.card-info {
+  margin-bottom: 1rem;
+}
+
+.card-info-item {
+  margin-bottom: 0.5rem;
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.card-info-label {
+  font-weight: 600;
+  color: #6B7280;
+  margin-right: 0.25rem;
+}
+
+.card-info-value {
+  color: #1F2937;
+}
+
+.card-info-primary {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+
+/* Progress Bar Component */
+.progress-container {
+  margin-top: 1rem;
+}
+
+.progress-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progress-bar-bg {
+  flex: 1;
+  height: 0.5rem;
+  background-color: var(--progress-bg);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--progress-fill);
+  border-radius: 9999px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated shine effect for progress bar */
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  animation: progressShine 2s infinite;
+}
+
+@keyframes progressShine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--progress-text);
+  white-space: nowrap;
+}
+
+/* Card Divider */
+.card-divider {
+  height: 1px;
+  background-color: #E5E7EB;
+  margin: 1rem 0;
+}
+
+/* Responsive Card Grid */
+.card-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+}
+
+@media (min-width: 640px) {
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  }
+}
+
+/* ===========================
+   Card Variations
+   =========================== */
+
+/* Compact Card for Lists */
+.card-compact {
+  padding: 1rem;
+}
+
+.card-compact .card-content {
+  padding: 1rem;
+  padding-top: 1.5rem;
+}
+
+.card-compact .card-header {
+  margin-bottom: 0.75rem;
+}
+
+/* Expandable Card */
+.card-expandable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.card-expandable:hover {
+  background-color: #F9FAFB;
+}
+
+.card-expand-icon {
+  transition: transform 0.3s ease;
+}
+
+.card-expanded .card-expand-icon {
+  transform: rotate(180deg);
+}
+
+/* ===========================
+   Loading States
+   =========================== */
+
+.card-loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-loading::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* ===========================
+   Utility Classes
+   =========================== */
+
+.truncate-2-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Status Dot Indicator */
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  70% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* ===========================
+   Dark Mode Support (Future)
+   =========================== */
+
+@media (prefers-color-scheme: dark) {
+  /* Dark mode styles can be added here in the future */
+}
+
+/* ===========================
+   Print Styles
+   =========================== */
+
+@media print {
+  .card-modern {
+    box-shadow: none;
+    border: 1px solid #E5E7EB;
+    page-break-inside: avoid;
+  }
+
+  .card-border-top {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

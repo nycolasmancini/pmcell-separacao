@@ -4,8 +4,9 @@
  */
 
 class PedidoDetalheWebSocket {
-    constructor(pedidoId) {
+    constructor(pedidoId, alpineApp = null) {
         this.pedidoId = pedidoId;
+        this.alpineApp = alpineApp;
         this.ws = null;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 10;
@@ -342,14 +343,14 @@ class PedidoDetalheWebSocket {
                 }
             }
 
-            // Remover de itemsSeparados array se presente
-            const index = this.itemsSeparados.indexOf(item.id);
-            if (index > -1) {
-                this.itemsSeparados.splice(index, 1);
-            }
-
             // Atualizar todas as estatísticas
             this.updateStatistics();
+
+            // Trigger direct Alpine.js button visibility update
+            if (this.alpineApp && typeof this.alpineApp.updateFinalizarButtonVisibility === 'function') {
+                this.alpineApp.updateFinalizarButtonVisibility();
+                console.log('[WebSocket] Direct Alpine.js button visibility update triggered after item unseparado');
+            }
         }
     }
 
@@ -477,7 +478,7 @@ function pedidoDetalheApp(pedidoId) {
 
         init() {
             console.log('Inicializando pedido_detalhe app para pedido:', this.pedidoId);
-            this.ws = new PedidoDetalheWebSocket(this.pedidoId);
+            this.ws = new PedidoDetalheWebSocket(this.pedidoId, this);
 
             // Initialize itemsSeparados with already separated items
             document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {

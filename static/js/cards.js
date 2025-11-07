@@ -33,19 +33,30 @@
          * Don't reset bars that already have width from server rendering
          */
         animateProgressBar: function(bar, targetProgress) {
-            // Get current width (from inline style or computed)
-            const currentWidth = parseFloat(bar.style.width) || 0;
+            // Force browser to compute styles first using getComputedStyle
+            const computedWidth = window.getComputedStyle(bar).width;
+            const currentWidthPx = parseFloat(computedWidth) || 0;
+            const barWidth = bar.parentElement.offsetWidth || 1; // Parent width for percentage calculation
+            const currentPercentage = (currentWidthPx / barWidth) * 100;
 
-            // Only animate from 0 if bar is currently empty
-            // This prevents overriding server-rendered widths
-            if (currentWidth === 0) {
+            console.log(`[CardProgress] Bar current: ${currentPercentage.toFixed(1)}%, target: ${targetProgress}%`);
+
+            // If bar already has server-rendered width close to target, don't animate
+            if (Math.abs(currentPercentage - targetProgress) < 1) {
+                // Already at target (within 1%), just ensure it's set
+                bar.style.width = `${targetProgress}%`;
+                return;
+            }
+
+            // If bar is empty (< 1%), animate from 0 to target
+            if (currentPercentage < 1) {
                 bar.style.width = '0%';
-                void bar.offsetWidth;
+                void bar.offsetWidth; // Force reflow
                 setTimeout(() => {
                     bar.style.width = `${targetProgress}%`;
                 }, 100);
             } else {
-                // Bar already has width from server, just ensure it matches target
+                // Bar has some width, animate to new target
                 bar.style.width = `${targetProgress}%`;
             }
         },
@@ -234,13 +245,15 @@
         }
     };
 
-    // Initialize when DOM is ready
+    // Initialize when DOM is ready AND after a brief delay for style computation
+    // The delay ensures that server-rendered inline styles (style="width: X%")
+    // are fully computed by the browser before JavaScript reads them
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            CardProgress.init();
+            setTimeout(() => CardProgress.init(), 50);
         });
     } else {
-        CardProgress.init();
+        setTimeout(() => CardProgress.init(), 50);
     }
 
     // Add custom styles for animations

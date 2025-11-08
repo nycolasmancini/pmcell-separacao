@@ -938,7 +938,7 @@ def separar_item_view(request, item_id):
                 "id": item.id,
                 "separado": True,
                 "separado_por": request.user.nome,
-                "separado_em": item.separado_em.strftime('%d/%m/%Y %H:%M')
+                "separado_em": timezone.localtime(item.separado_em).strftime('%d/%m/%Y %H:%M')
             }
         }
     )
@@ -1249,7 +1249,7 @@ def marcar_compra_view(request, item_id):
                     "id": i.id,
                     "em_compra": True,
                     "marcado_compra_por": request.user.nome,
-                    "marcado_compra_em": i.marcado_compra_em.strftime('%d/%m/%Y %H:%M')
+                    "marcado_compra_em": timezone.localtime(i.marcado_compra_em).strftime('%d/%m/%Y %H:%M')
                 }
             }
         )
@@ -1354,7 +1354,7 @@ def substituir_item_view(request, item_id):
                 "produto_substituto": item.produto_substituto,
                 "separado": True,
                 "separado_por": request.user.nome,
-                "separado_em": item.separado_em.strftime('%d/%m/%Y %H:%M') if item.separado_em else None
+                "separado_em": timezone.localtime(item.separado_em).strftime('%d/%m/%Y %H:%M') if item.separado_em else None
             }
         }
     )

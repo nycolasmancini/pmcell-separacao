@@ -1093,9 +1093,16 @@ def unseparar_item_view(request, item_id):
             "item": {
                 "id": item.id,
                 "separado": False,
+                "separado_por": None,
+                "separado_em": None,
                 "substituido": False,
                 "produto_substituto": "",
                 "em_compra": False,
+                "marcado_compra_por": None,
+                "marcado_compra_em": None,
+                "compra_realizada": False,
+                "compra_realizada_por": None,
+                "compra_realizada_em": None,
                 "estava_substituido": estava_substituido,
                 "estava_em_compra": estava_em_compra
             }

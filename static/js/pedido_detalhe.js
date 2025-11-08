@@ -314,7 +314,7 @@ class PedidoDetalheWebSocket {
                 const descriptionCell = row.querySelector('.item-description');
                 if (descriptionCell) {
                     // Remover div de substituição se existir
-                    const substitutoDiv = descriptionCell.querySelector('.text-red-600.mt-1.text-xs');
+                    const substitutoDiv = descriptionCell.querySelector('.text-red-600.mt-1.text-xs, .text-blue-600.mt-1.text-xs');
                     if (substitutoDiv) {
                         substitutoDiv.remove();
                     }
@@ -340,6 +340,19 @@ class PedidoDetalheWebSocket {
                 if (statusBadge) {
                     statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800';
                     statusBadge.innerHTML = `<span class="status-text">Pendente</span>`;
+                }
+
+                // Remover elementos de separação e compra (nomes e timestamps)
+                const separationInfo = statusCell.querySelector('.separation-info');
+                if (separationInfo) {
+                    console.log('[WebSocket] Removendo informações de separação');
+                    separationInfo.remove();
+                }
+
+                const purchaseInfo = statusCell.querySelector('.purchase-info');
+                if (purchaseInfo) {
+                    console.log('[WebSocket] Removendo informações de compra');
+                    purchaseInfo.remove();
                 }
             }
 

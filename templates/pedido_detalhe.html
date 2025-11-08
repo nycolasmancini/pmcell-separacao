@@ -130,14 +130,14 @@
                                 </span>
                             </span>
                             {% if item.separado %}
-                            <div class="text-xs text-gray-500 mt-1">
-                                <div>{{ item.separado_por.nome }}</div>
-                                <div>{{ item.separado_em|date:"d/m H:i" }}</div>
+                            <div class="text-xs text-gray-500 mt-1 separation-info" data-item-id="{{ item.id }}">
+                                <div class="separator-name">{{ item.separado_por.nome }}</div>
+                                <div class="separator-time">{{ item.separado_em|date:"d/m H:i" }}</div>
                             </div>
                             {% elif item.em_compra %}
-                            <div class="text-xs text-gray-500 mt-1">
-                                <div>{{ item.marcado_compra_por.nome }}</div>
-                                <div>{{ item.marcado_compra_em|date:"d/m H:i" }}</div>
+                            <div class="text-xs text-gray-500 mt-1 purchase-info" data-item-id="{{ item.id }}">
+                                <div class="purchase-name">{{ item.marcado_compra_por.nome }}</div>
+                                <div class="purchase-time">{{ item.marcado_compra_em|date:"d/m H:i" }}</div>
                             </div>
                             {% endif %}
                         </td>

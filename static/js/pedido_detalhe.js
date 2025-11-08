@@ -122,18 +122,18 @@ class PedidoDetalheWebSocket {
             if (statusBadge) {
                 statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800';
                 statusBadge.innerHTML = `
-                    <span class="status-text">✓ Separado</span>
+                    <span class="status-text">Separado</span>
                 `;
             }
 
-            // Add timestamp below status
-            const statusCell = row.querySelector('td:nth-child(5)');
+            // Add timestamp below status (two lines: name / date)
+            const statusCell = row.querySelector('td:nth-child(4)');
             if (statusCell) {
                 const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
                 if (!existingTimestamp) {
                     const timestampDiv = document.createElement('div');
                     timestampDiv.className = 'text-xs text-gray-500 mt-1';
-                    timestampDiv.textContent = `${item.separado_por} - ${item.separado_em}`;
+                    timestampDiv.innerHTML = `<div>${item.separado_por}</div><div>${item.separado_em}</div>`;
                     statusCell.appendChild(timestampDiv);
                 }
             }
@@ -208,7 +208,7 @@ class PedidoDetalheWebSocket {
         console.log('[DEBUG] Linha encontrada:', row ? 'Sim' : 'Não');
 
         if (row) {
-            const statusCell = row.querySelector('td:nth-child(5)');
+            const statusCell = row.querySelector('td:nth-child(4)');
             console.log('[DEBUG] Status cell encontrada:', statusCell ? 'Sim' : 'Não');
 
             if (statusCell) {
@@ -217,20 +217,20 @@ class PedidoDetalheWebSocket {
 
                 if (statusBadge) {
                     statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800';
-                    statusBadge.innerHTML = `<span class="status-text">🛒 Em Compra</span>`;
+                    statusBadge.innerHTML = `<span class="status-text">Em Compra</span>`;
                     console.log('[DEBUG] Status badge atualizado com sucesso');
                 }
 
-                // Add timestamp if not exists
+                // Add timestamp if not exists (two lines: name / date)
                 const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
                 console.log('[DEBUG] Timestamp existente:', existingTimestamp ? 'Sim' : 'Não');
 
                 if (!existingTimestamp) {
                     const timestampDiv = document.createElement('div');
                     timestampDiv.className = 'text-xs text-gray-500 mt-1';
-                    timestampDiv.textContent = `${item.marcado_compra_por} - ${item.marcado_compra_em}`;
+                    timestampDiv.innerHTML = `<div>${item.marcado_compra_por}</div><div>${item.marcado_compra_em}</div>`;
                     statusCell.appendChild(timestampDiv);
-                    console.log('[DEBUG] Timestamp adicionado:', timestampDiv.textContent);
+                    console.log('[DEBUG] Timestamp adicionado:', timestampDiv.innerHTML);
                 }
             }
 
@@ -274,12 +274,12 @@ class PedidoDetalheWebSocket {
             }
 
             // Atualizar status
-            const statusCell = row.querySelector('td:nth-child(5)');
+            const statusCell = row.querySelector('td:nth-child(4)');
             if (statusCell) {
                 const statusBadge = statusCell.querySelector('.status-badge');
                 if (statusBadge) {
                     statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800';
-                    statusBadge.innerHTML = `<span class="status-text">↔ Substituído</span>`;
+                    statusBadge.innerHTML = `<span class="status-text">Substituído</span>`;
                 }
             }
 
@@ -334,12 +334,12 @@ class PedidoDetalheWebSocket {
             }
 
             // Atualizar status badge para Pendente
-            const statusCell = row.querySelector('td:nth-child(5)');
+            const statusCell = row.querySelector('td:nth-child(4)');
             if (statusCell) {
                 const statusBadge = statusCell.querySelector('.status-badge');
                 if (statusBadge) {
                     statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800';
-                    statusBadge.innerHTML = `<span class="status-text">⏳ Pendente</span>`;
+                    statusBadge.innerHTML = `<span class="status-text">Pendente</span>`;
                 }
             }
 

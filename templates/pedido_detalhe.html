@@ -74,7 +74,6 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12"></th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Código</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12"></th>
@@ -109,11 +108,8 @@
                             {% endif %}
                         </td>
 
-                        <!-- Código -->
-                        <td class="px-6 py-4 text-sm text-gray-500">{{ item.produto.codigo }}</td>
-
                         <!-- Quantidade -->
-                        <td class="px-6 py-4 text-sm text-gray-900 font-semibold">{{ item.quantidade_solicitada }}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900 font-semibold">{{ item.quantidade_solicitada|floatformat:"0g" }}</td>
 
                         <!-- Status -->
                         <td class="px-6 py-4">
@@ -126,16 +122,22 @@
                                     'bg-green-100 text-green-800': itemsSeparados.includes({{ item.id }})
                                 }">
                                 <span class="status-text">
-                                    {% if item.separado %}✓ Separado
-                                    {% elif item.substituido %}↔ Substituído
-                                    {% elif item.em_compra %}🛒 Em Compra
-                                    {% else %}⏳ Pendente{% endif %}
+                                    {% if item.separado %}Separado
+                                    {% elif item.substituido %}Substituído
+                                    {% elif item.em_compra %}Em Compra
+                                    {% else %}Pendente{% endif %}
                                 </span>
                             </span>
                             {% if item.separado %}
-                            <div class="text-xs text-gray-500 mt-1">{{ item.separado_por.nome }} - {{ item.separado_em|date:"d/m H:i" }}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                <div>{{ item.separado_por.nome }}</div>
+                                <div>{{ item.separado_em|date:"d/m H:i" }}</div>
+                            </div>
                             {% elif item.em_compra %}
-                            <div class="text-xs text-gray-500 mt-1">{{ item.marcado_compra_por.nome }} - {{ item.marcado_compra_em|date:"d/m H:i" }}</div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                <div>{{ item.marcado_compra_por.nome }}</div>
+                                <div>{{ item.marcado_compra_em|date:"d/m H:i" }}</div>
+                            </div>
                             {% endif %}
                         </td>
 
@@ -175,7 +177,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">
                             Nenhum item encontrado neste pedido.
                         </td>
                     </tr>

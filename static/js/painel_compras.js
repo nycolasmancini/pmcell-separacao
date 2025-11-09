@@ -138,55 +138,70 @@ class PainelComprasWebSocket {
     handleItemMarcadoCompra(itemData) {
         console.log('[WebSocket] Novo item marcado para compra:', itemData);
 
-        // Usar Alpine.js para adicionar item ao pedido correspondente
-        const alpineData = Alpine.$data(document.querySelector('[x-data]'));
-        if (!alpineData) {
-            console.warn('[WebSocket] Alpine.js app não encontrado, recarregando página...');
-            window.location.reload();
-            return;
-        }
+        try {
+            // Obter componente Alpine via _x_dataStack (método correto)
+            const component = document.querySelector('[x-data="painelComprasApp()"]');
 
-        // Encontrar o pedido nos dados do Alpine
-        let pedido = alpineData.pedidos.find(p => p.id === itemData.pedido_id);
+            if (!component || !component._x_dataStack) {
+                console.warn('[WebSocket] Alpine.js app não encontrado, recarregando página...');
+                window.location.reload();
+                return;
+            }
 
-        if (!pedido) {
-            // Se o pedido não existe, criar um novo pedido nos dados
-            pedido = {
-                id: itemData.pedido_id,
-                numero: itemData.pedido_numero,
-                cliente: itemData.cliente || 'Cliente Desconhecido',
-                itens: []
+            // Acessar dados reativos do Alpine
+            const alpineData = component._x_dataStack[0];
+
+            // Encontrar o pedido nos dados do Alpine
+            let pedidoIndex = alpineData.pedidos.findIndex(p => p.id === itemData.pedido_id);
+            let pedido;
+
+            if (pedidoIndex === -1) {
+                // Se o pedido não existe, criar um novo pedido
+                const novoPedido = {
+                    id: itemData.pedido_id,
+                    numero: itemData.pedido_numero,
+                    cliente: itemData.cliente || 'Cliente Desconhecido',
+                    itens: []
+                };
+                alpineData.pedidos.push(novoPedido);
+                pedidoIndex = alpineData.pedidos.length - 1;
+                pedido = alpineData.pedidos[pedidoIndex];
+                console.log('[WebSocket] Novo pedido criado:', pedido);
+            } else {
+                pedido = alpineData.pedidos[pedidoIndex];
+            }
+
+            // Verificar se o item já existe no pedido
+            const itemExistente = pedido.itens.find(i => i.id === itemData.id);
+            if (itemExistente) {
+                console.log('[WebSocket] Item já existe no pedido, ignorando duplicata');
+                return;
+            }
+
+            // Adicionar novo item diretamente ao array
+            const novoItem = {
+                id: itemData.id,
+                produto_codigo: itemData.produto_codigo,
+                produto_descricao: itemData.produto_descricao,
+                quantidade: itemData.quantidade,
+                marcado_por: itemData.marcado_por,
+                marcado_em: itemData.marcado_em,
+                comprado: itemData.comprado || false
             };
-            alpineData.pedidos.push(pedido);
-            console.log('[WebSocket] Novo pedido criado:', pedido);
+
+            // Usar push direto no array - Alpine detecta mutações de arrays
+            pedido.itens.push(novoItem);
+
+            // Forçar re-filter para atualizar a UI
+            alpineData.filterOrders();
+
+            console.log(`[WebSocket] Item ${itemData.id} adicionado ao pedido ${itemData.pedido_numero}`);
+            console.log('[WebSocket] Total de itens no pedido:', pedido.itens.length);
+
+        } catch (error) {
+            console.error('[WebSocket] Erro ao adicionar item dinamicamente, recarregando:', error);
+            window.location.reload();
         }
-
-        // Verificar se o item já existe no pedido
-        const itemExistente = pedido.itens.find(i => i.id === itemData.id);
-        if (itemExistente) {
-            console.log('[WebSocket] Item já existe no pedido, ignorando duplicata');
-            return;
-        }
-
-        // Adicionar novo item ao final da lista de itens do pedido
-        const novoItem = {
-            id: itemData.id,
-            produto_codigo: itemData.produto_codigo,
-            produto_descricao: itemData.produto_descricao,
-            quantidade: itemData.quantidade,
-            marcado_por: itemData.marcado_por,
-            marcado_em: itemData.marcado_em,
-            comprado: itemData.comprado || false
-        };
-
-        // Force Alpine.js reactivity by reassigning arrays instead of using push
-        pedido.itens = [...pedido.itens, novoItem];
-        alpineData.pedidos = [...alpineData.pedidos];
-
-        // Atualizar filteredOrders se necessário
-        alpineData.filterOrders();
-
-        console.log(`[WebSocket] Item ${itemData.id} adicionado ao pedido ${itemData.pedido_numero}`);
     }
 
     handleItemComprado(itemData) {

@@ -135,10 +135,55 @@ class PainelComprasWebSocket {
 
     // Handlers de eventos
 
-    handleItemMarcadoCompra(item) {
-        console.log('[WebSocket] Novo item marcado para compra:', item);
-        // Recarregar a página para mostrar o novo item
-        window.location.reload();
+    handleItemMarcadoCompra(itemData) {
+        console.log('[WebSocket] Novo item marcado para compra:', itemData);
+
+        // Usar Alpine.js para adicionar item ao pedido correspondente
+        const alpineData = Alpine.$data(document.querySelector('[x-data]'));
+        if (!alpineData) {
+            console.warn('[WebSocket] Alpine.js app não encontrado, recarregando página...');
+            window.location.reload();
+            return;
+        }
+
+        // Encontrar o pedido nos dados do Alpine
+        let pedido = alpineData.pedidos.find(p => p.id === itemData.pedido_id);
+
+        if (!pedido) {
+            // Se o pedido não existe, criar um novo pedido nos dados
+            pedido = {
+                id: itemData.pedido_id,
+                numero: itemData.pedido_numero,
+                cliente: itemData.cliente || 'Cliente Desconhecido',
+                itens: []
+            };
+            alpineData.pedidos.push(pedido);
+            console.log('[WebSocket] Novo pedido criado:', pedido);
+        }
+
+        // Verificar se o item já existe no pedido
+        const itemExistente = pedido.itens.find(i => i.id === itemData.id);
+        if (itemExistente) {
+            console.log('[WebSocket] Item já existe no pedido, ignorando duplicata');
+            return;
+        }
+
+        // Adicionar novo item ao final da lista de itens do pedido
+        const novoItem = {
+            id: itemData.id,
+            produto_descricao: itemData.produto_descricao,
+            quantidade: itemData.quantidade,
+            marcado_por: itemData.marcado_por,
+            marcado_em: itemData.marcado_em,
+            comprado: itemData.comprado || false
+        };
+
+        pedido.itens.push(novoItem);
+
+        // Atualizar filteredOrders se necessário
+        alpineData.filterOrders();
+
+        console.log(`[WebSocket] Item ${itemData.id} adicionado ao pedido ${itemData.pedido_numero}`);
     }
 
     handleItemComprado(itemData) {

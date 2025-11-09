@@ -1286,6 +1286,7 @@ def marcar_compra_view(request, item_id):
                     "pedido_id": i.pedido.id,
                     "pedido_numero": i.pedido.numero_orcamento,
                     "cliente": i.pedido.nome_cliente,
+                    "produto_codigo": i.produto.codigo,
                     "produto_descricao": i.produto.descricao,
                     "quantidade": str(i.quantidade_solicitada),
                     "marcado_por": request.user.nome,

@@ -1594,6 +1594,13 @@ def painel_compras_view(request):
 
     import json
     from django.core.serializers.json import DjangoJSONEncoder
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.info(f"Painel Compras - Total produtos: {total_produtos}, Total itens: {total_itens}")
+    logger.info(f"Painel Compras - Filtros: search='{search_text}', order='{order_filter}'")
+    if total_produtos > 0:
+        logger.info(f"Painel Compras - Primeiro produto: {produtos_lista[0]['codigo']} - {produtos_lista[0]['descricao']}")
 
     context = {
         'produtos': produtos_lista,
@@ -1601,8 +1608,8 @@ def painel_compras_view(request):
         'total_produtos': total_produtos,
         'total_itens': total_itens,
         'total_quantidade': total_quantidade,
-        'search_text': search_text,
-        'order_filter': order_filter,
+        'search_text': '',  # Always pass empty strings to prevent browser autocomplete issues
+        'order_filter': '',  # Always pass empty strings to prevent browser autocomplete issues
     }
 
     return render(request, 'painel_compras.html', context)

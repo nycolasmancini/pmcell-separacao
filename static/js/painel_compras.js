@@ -185,8 +185,29 @@ function painelComprasApp() {
 
         // Initialization
         init() {
-            console.log('[PainelComprasApp] Inicializando...', this.produtos);
+            console.log('[PainelComprasApp] Inicializando...');
+            console.log('[PainelComprasApp] window.produtosData:', window.produtosData);
+            console.log('[PainelComprasApp] Total produtos carregados:', this.produtos.length);
+
+            if (this.produtos.length > 0) {
+                console.log('[PainelComprasApp] Primeiro produto:', this.produtos[0]);
+            } else {
+                console.warn('[PainelComprasApp] AVISO: Nenhum produto encontrado!');
+            }
+
+            // Set filtered products
             this.filteredProducts = this.produtos;
+            console.log('[PainelComprasApp] Produtos filtrados iniciais:', this.filteredProducts.length);
+
+            // Ensure search fields are cleared (fix browser autocomplete bugs)
+            this.searchText = '';
+            this.orderFilter = '';
+
+            // Clear input values via DOM to override any browser autocomplete
+            const searchInput = document.getElementById('searchText');
+            const orderInput = document.getElementById('orderFilter');
+            if (searchInput) searchInput.value = '';
+            if (orderInput) orderInput.value = '';
 
             // Inicializar WebSocket
             this.ws = new PainelComprasWebSocket();

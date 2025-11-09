@@ -39,6 +39,7 @@
                         x-model="searchText"
                         @input="filterProducts()"
                         placeholder="Digite código ou descrição..."
+                        autocomplete="off"
                         class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                 </div>
@@ -52,7 +53,8 @@
                         x-model="orderFilter"
                         @input="filterProducts()"
                         placeholder="Digite número do orçamento..."
-                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        autocomplete="off"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                 </div>
             </div>

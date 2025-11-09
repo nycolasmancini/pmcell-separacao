@@ -256,8 +256,54 @@ class PainelComprasWebSocket {
 
     handleItemSeparadoDireto(item) {
         console.log('[WebSocket] Item separado direto do estoque:', item);
-        // Recarregar a página para remover o item da lista
-        window.location.reload();
+
+        try {
+            // Obter componente Alpine via _x_dataStack
+            const component = document.querySelector('[x-data="painelComprasApp()"]');
+
+            if (!component || !component._x_dataStack) {
+                console.warn('[WebSocket] Alpine.js app não encontrado, recarregando página...');
+                window.location.reload();
+                return;
+            }
+
+            // Acessar dados reativos do Alpine
+            const alpineData = component._x_dataStack[0];
+
+            // Encontrar o pedido que contém o item
+            const pedido = alpineData.pedidos.find(p =>
+                p.itens.some(i => i.id === item.id)
+            );
+
+            if (!pedido) {
+                console.warn('[WebSocket] Pedido não encontrado para o item:', item.id);
+                return;
+            }
+
+            // Remover o item do array de itens
+            const itemIndex = pedido.itens.findIndex(i => i.id === item.id);
+            if (itemIndex !== -1) {
+                pedido.itens.splice(itemIndex, 1);
+                console.log(`[WebSocket] Item ${item.id} removido do pedido ${pedido.numero}`);
+                console.log('[WebSocket] Total de itens restantes no pedido:', pedido.itens.length);
+            }
+
+            // Se o pedido ficou sem itens, remover o pedido
+            if (pedido.itens.length === 0) {
+                const pedidoIndex = alpineData.pedidos.findIndex(p => p.id === pedido.id);
+                if (pedidoIndex !== -1) {
+                    alpineData.pedidos.splice(pedidoIndex, 1);
+                    console.log(`[WebSocket] Pedido ${pedido.numero} removido (sem itens)`);
+                }
+            }
+
+            // Forçar re-filter para atualizar a UI
+            alpineData.filterOrders();
+
+        } catch (error) {
+            console.error('[WebSocket] Erro ao remover item dinamicamente, recarregando:', error);
+            window.location.reload();
+        }
     }
 
     close() {

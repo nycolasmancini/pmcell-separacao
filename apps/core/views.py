@@ -1626,14 +1626,14 @@ def painel_compras_view(request):
         em_compra=True,
         compra_realizada=False,
         pedido__deletado=False
-    ).select_related('produto', 'pedido', 'pedido__cliente', 'marcado_compra_por')
+    ).select_related('produto', 'pedido', 'pedido__vendedor', 'marcado_compra_por')
 
     # Aplicar filtros
     if search_text:
         query = query.filter(
             Q(produto__codigo__icontains=search_text) |
             Q(produto__descricao__icontains=search_text) |
-            Q(pedido__cliente__nome__icontains=search_text)
+            Q(pedido__nome_cliente__icontains=search_text)
         )
 
     if order_filter:
@@ -1649,7 +1649,7 @@ def painel_compras_view(request):
             pedidos_agrupados[pedido_id] = {
                 'id': pedido_id,
                 'numero': item.pedido.numero_orcamento,
-                'cliente': item.pedido.cliente.nome if item.pedido.cliente else 'Cliente não informado',
+                'cliente': item.pedido.nome_cliente if item.pedido.nome_cliente else 'Cliente não informado',
                 'itens': []
             }
 

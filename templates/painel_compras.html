@@ -4,7 +4,6 @@
 {% block title %}Painel de Compras - Sistema PMCELL{% endblock %}
 
 {% block extra_head %}
-<script src="{% static 'js/painel_compras.js' %}" defer></script>
 <style>
 [x-cloak] { display: none !important; }
 </style>
@@ -272,8 +271,10 @@
     </div>
 </div>
 
+<!-- Scripts: Load data first, then app code, then Alpine.js (from base.html) -->
 <script>
 // Passar dados do Django para JavaScript
 window.produtosData = {{ produtos_json|safe }};
 </script>
+<script src="{% static 'js/painel_compras.js' %}"></script>
 {% endblock %}

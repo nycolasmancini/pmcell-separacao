@@ -171,6 +171,7 @@ class PainelComprasWebSocket {
         // Adicionar novo item ao final da lista de itens do pedido
         const novoItem = {
             id: itemData.id,
+            produto_codigo: itemData.produto_codigo,
             produto_descricao: itemData.produto_descricao,
             quantidade: itemData.quantidade,
             marcado_por: itemData.marcado_por,
@@ -178,7 +179,9 @@ class PainelComprasWebSocket {
             comprado: itemData.comprado || false
         };
 
-        pedido.itens.push(novoItem);
+        // Force Alpine.js reactivity by reassigning arrays instead of using push
+        pedido.itens = [...pedido.itens, novoItem];
+        alpineData.pedidos = [...alpineData.pedidos];
 
         // Atualizar filteredOrders se necessário
         alpineData.filterOrders();

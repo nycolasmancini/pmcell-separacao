@@ -170,9 +170,19 @@ class DashboardWebSocket {
         // Remover card do pedido (se existir)
         const card = document.querySelector(`[data-pedido-id="${pedidoId}"]`);
         if (card) {
+            // Get parent <a class="card-link"> element
+            const cardLink = card.closest('.card-link');
+
+            // Apply fade animation to the card
             card.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+
+            // Remove the entire parent link element after animation
             setTimeout(() => {
-                card.remove();
+                if (cardLink) {
+                    cardLink.remove();
+                } else {
+                    card.remove(); // Fallback if parent not found
+                }
             }, 300);
         }
 

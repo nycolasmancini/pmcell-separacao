@@ -517,10 +517,12 @@ function pedidoDetalheApp(pedidoId) {
             // Calcular visibilidade do botão Finalizar baseado no estado atual do DOM
             const allItems = document.querySelectorAll('tr[data-item-id]').length;
             const separadosVerdes = document.querySelectorAll('.status-badge.bg-green-100').length;
+            const substituidosAzuis = document.querySelectorAll('.status-badge.bg-blue-100').length;
             const emCompraAmarelos = document.querySelectorAll('.status-badge.bg-yellow-100').length;
 
-            // Calcular progresso
-            const progress = allItems > 0 ? Math.round((separadosVerdes / allItems) * 100) : 0;
+            // Calcular progresso (incluindo itens separados E substituídos)
+            const totalCompletos = separadosVerdes + substituidosAzuis;
+            const progress = allItems > 0 ? Math.round((totalCompletos / allItems) * 100) : 0;
 
             // Botão deve aparecer quando:
             // 1. Progresso = 100% (todos itens separados ou substituídos)
@@ -530,7 +532,7 @@ function pedidoDetalheApp(pedidoId) {
 
             // Atualizar propriedade reativa
             this.mostrarBotaoFinalizar = deveExibir;
-            console.log(`[Button Visibility] Progress: ${progress}%, Em Compra: ${emCompraAmarelos}, Total Items: ${allItems}, Show Button: ${deveExibir}`);
+            console.log(`[Button Visibility] Progress: ${progress}%, Separados: ${separadosVerdes}, Substituídos: ${substituidosAzuis}, Em Compra: ${emCompraAmarelos}, Total Items: ${allItems}, Show Button: ${deveExibir}`);
         },
 
         // Handle checkbox change for item separation

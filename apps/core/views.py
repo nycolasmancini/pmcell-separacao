@@ -1281,6 +1281,84 @@ def marcar_compra_view(request, item_id):
     })
 
 
+@admin_or_compradora
+@require_http_methods(["POST"])
+def marcar_item_comprado_view(request, item_id):
+    """
+    View para marcar/desmarcar item como comprado no painel de compras.
+    Disponível para COMPRADORA ou ADMINISTRADOR.
+    """
+    item = get_object_or_404(ItemPedido, id=item_id)
+    pedido = item.pedido
+
+    # Verificar se pedido não está deletado
+    if pedido.deletado:
+        return JsonResponse({'success': False, 'error': 'Pedido foi deletado.'}, status=400)
+
+    # Verificar se item está marcado para compra
+    if not item.em_compra:
+        return JsonResponse({'success': False, 'error': 'Item não está marcado para compra.'}, status=400)
+
+    # Toggle compra_realizada
+    item.compra_realizada = not item.compra_realizada
+
+    if item.compra_realizada:
+        item.compra_realizada_por = request.user
+        item.compra_realizada_em = timezone.now()
+    else:
+        item.compra_realizada_por = None
+        item.compra_realizada_em = None
+
+    item.save()
+
+    # Auditoria
+    ip = get_client_ip(request)
+    user_agent = request.META.get('HTTP_USER_AGENT', '')[:255]
+    LogAuditoria.objects.create(
+        usuario=request.user,
+        acao='marcar_item_comprado' if item.compra_realizada else 'desmarcar_item_comprado',
+        modelo='ItemPedido',
+        objeto_id=item.id,
+        dados_novos={
+            'item_id': item.id,
+            'pedido_id': pedido.id,
+            'produto': item.produto.descricao,
+            'comprado': item.compra_realizada
+        },
+        ip=ip,
+        user_agent=user_agent
+    )
+
+    # Broadcast WebSocket para painel de compras
+    comprado_em_formatted = None
+    if item.compra_realizada and item.compra_realizada_em:
+        comprado_em_formatted = timezone.localtime(item.compra_realizada_em).strftime('%d/%m/%Y %H:%M')
+
+    broadcast_to_websocket(
+        "painel_compras",
+        "item_comprado",
+        {
+            "item": {
+                "id": item.id,
+                "pedido_id": pedido.id,
+                "comprado": item.compra_realizada,
+                "comprado_por": request.user.nome if item.compra_realizada else None,
+                "comprado_em": comprado_em_formatted
+            }
+        }
+    )
+
+    # Se item foi comprado E depois separado, remove do painel de compras
+    # (broadcast para remover do painel será enviado pelo separar_item_view)
+
+    return JsonResponse({
+        'success': True,
+        'comprado': item.compra_realizada,
+        'comprado_por': request.user.nome if item.compra_realizada else None,
+        'comprado_em': comprado_em_formatted
+    })
+
+
 @admin_or_separador
 @require_http_methods(["POST"])
 def substituir_item_view(request, item_id):
@@ -1536,7 +1614,7 @@ from datetime import datetime, timedelta
 @require_http_methods(["GET"])
 def painel_compras_view(request):
     """
-    Painel de compras - lista itens marcados para compra agrupados por produto.
+    Painel de compras - lista itens marcados para compra agrupados por pedido.
     Disponível para COMPRADORA ou ADMINISTRADOR.
     """
     # Filtros
@@ -1548,66 +1626,65 @@ def painel_compras_view(request):
         em_compra=True,
         compra_realizada=False,
         pedido__deletado=False
-    ).select_related('produto', 'pedido', 'marcado_compra_por')
+    ).select_related('produto', 'pedido', 'pedido__cliente', 'marcado_compra_por')
 
     # Aplicar filtros
     if search_text:
         query = query.filter(
             Q(produto__codigo__icontains=search_text) |
-            Q(produto__descricao__icontains=search_text)
+            Q(produto__descricao__icontains=search_text) |
+            Q(pedido__cliente__nome__icontains=search_text)
         )
 
     if order_filter:
         query = query.filter(pedido__numero_orcamento__icontains=order_filter)
 
-    # Agrupar por produto
-    produtos_agrupados = {}
+    # Agrupar por pedido
+    pedidos_agrupados = {}
 
     for item in query:
-        codigo = item.produto.codigo
+        pedido_id = item.pedido.id
 
-        if codigo not in produtos_agrupados:
-            produtos_agrupados[codigo] = {
-                'codigo': codigo,
-                'descricao': item.produto.descricao,
-                'quantidade_total': 0,
+        if pedido_id not in pedidos_agrupados:
+            pedidos_agrupados[pedido_id] = {
+                'id': pedido_id,
+                'numero': item.pedido.numero_orcamento,
+                'cliente': item.pedido.cliente.nome if item.pedido.cliente else 'Cliente não informado',
                 'itens': []
             }
 
-        produtos_agrupados[codigo]['quantidade_total'] += item.quantidade_solicitada
-        produtos_agrupados[codigo]['itens'].append({
+        pedidos_agrupados[pedido_id]['itens'].append({
             'id': item.id,
-            'pedido_id': item.pedido.id,
-            'pedido_numero': item.pedido.numero_orcamento,
+            'produto_codigo': item.produto.codigo,
+            'produto_descricao': item.produto.descricao,
             'quantidade': item.quantidade_solicitada,
             'marcado_por': item.marcado_compra_por.nome if item.marcado_compra_por else 'N/A',
-            'marcado_em': item.marcado_compra_em.strftime('%d/%m/%Y %H:%M') if item.marcado_compra_em else 'N/A'
+            'marcado_em': item.marcado_compra_em.strftime('%d/%m/%Y %H:%M') if item.marcado_compra_em else 'N/A',
+            'comprado': item.compra_realizada
         })
 
-    # Converter para lista e ordenar por código
-    produtos_lista = sorted(produtos_agrupados.values(), key=lambda x: x['codigo'])
+    # Converter para lista e ordenar por número do pedido
+    pedidos_lista = sorted(pedidos_agrupados.values(), key=lambda x: x['numero'])
 
     # Calcular estatísticas
-    total_produtos = len(produtos_lista)
+    total_pedidos = len(pedidos_lista)
     total_itens = query.count()
-    total_quantidade = sum(p['quantidade_total'] for p in produtos_lista)
 
     import json
     from django.core.serializers.json import DjangoJSONEncoder
     import logging
 
     logger = logging.getLogger(__name__)
-    logger.info(f"Painel Compras - Total produtos: {total_produtos}, Total itens: {total_itens}")
+    logger.info(f"Painel Compras - Total pedidos: {total_pedidos}, Total itens: {total_itens}")
     logger.info(f"Painel Compras - Filtros: search='{search_text}', order='{order_filter}'")
-    if total_produtos > 0:
-        logger.info(f"Painel Compras - Primeiro produto: {produtos_lista[0]['codigo']} - {produtos_lista[0]['descricao']}")
+    if total_pedidos > 0:
+        logger.info(f"Painel Compras - Primeiro pedido: {pedidos_lista[0]['numero']} - {pedidos_lista[0]['cliente']}")
 
     context = {
-        'produtos': produtos_lista,
-        'produtos_json': json.dumps(produtos_lista, cls=DjangoJSONEncoder),
-        'total_produtos': total_produtos,
+        'pedidos': pedidos_lista,
+        'pedidos_json': json.dumps(pedidos_lista, cls=DjangoJSONEncoder),
+        'total_pedidos': total_pedidos,
         'total_itens': total_itens,
-        'total_quantidade': total_quantidade,
         'search_text': '',  # Always pass empty strings to prevent browser autocomplete issues
         'order_filter': '',  # Always pass empty strings to prevent browser autocomplete issues
     }

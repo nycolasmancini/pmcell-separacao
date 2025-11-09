@@ -29,15 +29,15 @@
         <!-- Filtros -->
         <div class="bg-white rounded-lg shadow-md p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Filtro: Busca por Produto -->
+                <!-- Filtro: Busca por Produto/Cliente -->
                 <div>
-                    <label for="searchText" class="block text-sm font-medium text-gray-700 mb-2">Buscar Produto (Código ou Descrição)</label>
+                    <label for="searchText" class="block text-sm font-medium text-gray-700 mb-2">Buscar (Produto, Cliente ou Código)</label>
                     <input
                         type="text"
                         id="searchText"
                         x-model="searchText"
-                        @input="filterProducts()"
-                        placeholder="Digite código ou descrição..."
+                        @input="filterOrders()"
+                        placeholder="Digite código, nome do produto ou cliente..."
                         autocomplete="off"
                         class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -50,10 +50,10 @@
                         type="text"
                         id="orderFilter"
                         x-model="orderFilter"
-                        @input="filterProducts()"
+                        @input="filterOrders()"
                         placeholder="Digite número do orçamento..."
                         autocomplete="off"
-                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                 </div>
             </div>
@@ -61,18 +61,18 @@
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Total Produtos -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Total Pedidos -->
         <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-purple-500">
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
                     <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
                 </div>
                 <div class="ml-4">
-                    <p class="text-sm text-gray-500 font-medium">Produtos Diferentes</p>
-                    <p class="text-2xl font-bold text-gray-900" x-text="filteredProducts.length"></p>
+                    <p class="text-sm text-gray-500 font-medium">Pedidos com Compras</p>
+                    <p class="text-2xl font-bold text-gray-900" x-text="filteredOrders.length"></p>
                 </div>
             </div>
         </div>
@@ -82,7 +82,7 @@
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
                     <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                     </svg>
                 </div>
                 <div class="ml-4">
@@ -91,130 +91,82 @@
                 </div>
             </div>
         </div>
-
-        <!-- Quantidade Total -->
-        <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-green-500">
-            <div class="flex items-center">
-                <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
-                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                    </svg>
-                </div>
-                <div class="ml-4">
-                    <p class="text-sm text-gray-500 font-medium">Quantidade Total</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ total_quantidade|floatformat:0 }}</p>
-                </div>
-            </div>
-        </div>
     </div>
 
-    <!-- Lista de Produtos -->
-    <div class="space-y-4">
-        {% if produtos %}
-            <template x-for="produto in filteredProducts" :key="produto.codigo">
-                <div class="card-modern card-expandable fade-in" x-data="{ expanded: false }">
-                    <!-- Borda superior laranja para produtos em compra -->
+    <!-- Lista de Pedidos Agrupados -->
+    <div class="space-y-6">
+        {% if pedidos %}
+            <template x-for="pedido in filteredOrders" :key="pedido.id">
+                <div class="card-modern fade-in" :data-pedido-id="pedido.id">
+                    <!-- Borda superior laranja (aguardando compra) -->
                     <div class="card-border-top card-border-aguardando-compra"></div>
 
                     <div class="card-content">
-                        <!-- Header: Código do produto e Badge -->
-                        <div class="card-header">
-                            <span class="card-number" x-text="`#${produto.codigo}`"></span>
+                        <!-- Header: Número do pedido e Cliente -->
+                        <div class="card-header mb-4">
+                            <div>
+                                <a :href="`/pedidos/${pedido.id}/`"
+                                   class="card-number text-blue-600 hover:text-blue-800 transition-colors">
+                                    #<span x-text="pedido.numero"></span>
+                                </a>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    <svg class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    <span x-text="pedido.cliente"></span>
+                                </p>
+                            </div>
                             <span class="status-badge-modern badge-aguardando-compra">
-                                AGUARDANDO COMPRA
+                                COMPRAR
                             </span>
                         </div>
 
                         <!-- Divisor -->
                         <div class="card-divider"></div>
 
-                        <!-- Informações do Produto -->
-                        <div class="card-info">
-                            <p class="card-info-primary" x-text="produto.descricao"></p>
-                            <p class="card-info-item">
-                                <span class="card-info-label">Quantidade Total:</span>
-                                <span class="card-info-value text-xl font-bold" x-text="produto.quantidade_total"></span>
-                            </p>
-                            <p class="card-info-item">
-                                <span class="card-info-label">Pedidos Relacionados:</span>
-                                <span class="card-info-value" x-text="`${produto.itens.length} pedido${produto.itens.length !== 1 ? 's' : ''}`"></span>
-                            </p>
-                        </div>
+                        <!-- Lista de Itens para Compra -->
+                        <div class="space-y-3">
+                            <template x-for="item in pedido.itens" :key="item.id">
+                                <div class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                     :data-item-id="item.id">
+                                    <!-- Checkbox -->
+                                    <div class="flex-shrink-0 mt-1">
+                                        <input
+                                            type="checkbox"
+                                            :id="`item-${item.id}`"
+                                            :checked="item.comprado"
+                                            @change="toggleItemComprado(pedido.id, item.id, $event.target.checked)"
+                                            class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500 cursor-pointer"
+                                        />
+                                    </div>
 
-                        <!-- Barra de Progresso (mostra porcentagem de pedidos que já têm este produto) -->
-                        <div class="progress-container" x-show="produto.itens.length > 0">
-                            <div class="progress-wrapper">
-                                <div class="progress-bar-bg">
-                                    <div class="progress-bar-fill" style="width: 0%"></div>
-                                </div>
-                                <span class="progress-text">
-                                    <span x-text="produto.itens.length"></span> pedidos aguardando
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Botões de Ação -->
-                        <div class="flex gap-3 mt-4">
-                            <button
-                                @click="expanded = !expanded"
-                                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105"
-                            >
-                                <svg x-show="!expanded" class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                                <svg x-show="expanded" class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                </svg>
-                                <span x-show="!expanded">Ver Pedidos</span>
-                                <span x-show="expanded">Ocultar Pedidos</span>
-                                (<span x-text="produto.itens.length"></span>)
-                            </button>
-                            <button
-                                @click="openConfirmModal(produto)"
-                                class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105"
-                            >
-                                <svg class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                </svg>
-                                Confirmar Compra
-                            </button>
-                        </div>
-
-                        <!-- Lista de Pedidos (Expandível) -->
-                        <div x-show="expanded" x-collapse class="mt-4 -mx-6 px-6 py-4 bg-gray-50 border-t border-gray-200">
-                            <h4 class="text-sm font-semibold text-gray-700 mb-3">
-                                <svg class="inline-block w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                </svg>
-                                Pedidos que precisam deste produto:
-                            </h4>
-                            <div class="space-y-2">
-                                <template x-for="item in produto.itens" :key="item.id">
-                                    <div class="bg-white rounded-lg p-3 hover:shadow-md transition-shadow">
-                                        <div class="flex justify-between items-center">
-                                            <div>
-                                                <a :href="`/pedidos/${item.pedido_id}/`"
-                                                   class="text-blue-600 hover:text-blue-800 font-medium transition-colors">
-                                                   Pedido <span x-text="`#${item.pedido_numero}`"></span>
-                                                </a>
+                                    <!-- Informações do Item -->
+                                    <label :for="`item-${item.id}`" class="flex-1 cursor-pointer">
+                                        <div class="flex justify-between items-start">
+                                            <div class="flex-1">
+                                                <p class="font-semibold text-gray-800" x-text="`${item.produto_codigo} - ${item.produto_descricao}`"></p>
                                                 <p class="text-sm text-gray-600 mt-1">
-                                                    <span class="card-info-label">Quantidade:</span>
-                                                    <strong x-text="item.quantidade"></strong>
+                                                    <span class="font-medium">Quantidade:</span>
+                                                    <span x-text="item.quantidade"></span>
                                                 </p>
                                                 <p class="text-xs text-gray-500 mt-1">
                                                     <svg class="inline-block w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                     </svg>
                                                     Marcado por <strong x-text="item.marcado_por"></strong> em <span x-text="item.marcado_em"></span>
                                                 </p>
                                             </div>
-                                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                            </svg>
+
+                                            <!-- Badge de Status do Item (se comprado) -->
+                                            <div x-show="item.comprado" class="ml-3">
+                                                <span class="status-badge-modern badge-comprado text-xs">
+                                                    COMPRADO
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                </template>
-                            </div>
+                                    </label>
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -229,52 +181,12 @@
             </div>
         {% endif %}
     </div>
-
-    <!-- Modal de Confirmação de Compra -->
-    <div x-show="modalConfirmar.show"
-         x-cloak
-         class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
-         @click.self="modalConfirmar.show = false">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-96 shadow-lg rounded-lg bg-white">
-            <div class="mt-3">
-                <h3 class="text-lg font-bold text-gray-900 mb-4">Confirmar Compra</h3>
-                <p class="text-sm text-gray-600 mb-2">
-                    Confirmar compra do produto:
-                </p>
-                <div class="bg-gray-100 rounded p-3 mb-4">
-                    <p class="font-bold text-gray-800" x-text="modalConfirmar.produtoCodigo"></p>
-                    <p class="text-sm text-gray-600" x-text="modalConfirmar.produtoDesc"></p>
-                    <p class="text-sm text-gray-600 mt-2">
-                        Total de itens: <strong x-text="modalConfirmar.totalItens"></strong>
-                    </p>
-                </div>
-                <p class="text-sm text-gray-500 mb-4">
-                    Esta ação marcará todos os itens deste produto como "comprado". O SEPARADOR ainda precisará separar os itens fisicamente após a chegada do produto.
-                </p>
-
-                <div class="flex gap-3">
-                    <button
-                        @click="modalConfirmar.show = false"
-                        class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        @click="confirmarCompra()"
-                        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Confirmar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Scripts: Load data first, then app code, then Alpine.js (from base.html) -->
 <script>
 // Passar dados do Django para JavaScript
-window.produtosData = {{ produtos_json|safe }};
+window.pedidosData = {{ pedidos_json|safe }};
 </script>
 <script src="{% static 'js/painel_compras.js' %}"></script>
 {% endblock %}

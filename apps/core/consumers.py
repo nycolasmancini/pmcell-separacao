@@ -318,3 +318,13 @@ class PainelComprasConsumer(AsyncWebsocketConsumer):
             'type': 'item_separado_direto',
             'item': event['item']
         }))
+
+    async def item_comprado(self, event):
+        """
+        Handler chamado quando um item é marcado/desmarcado como comprado.
+        Atualiza o status de compra do item no painel.
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'item_comprado',
+            'item': event['item']
+        }))

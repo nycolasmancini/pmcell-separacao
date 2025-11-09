@@ -13,6 +13,7 @@
   --status-concluido: #34D399;
   --status-finalizado: #34D399;
   --status-cancelado: #F87171;
+  --status-comprado: #9333EA;
 
   /* Background Colors for Status */
   --bg-nao-iniciado: #F3F4F6;
@@ -22,6 +23,7 @@
   --bg-concluido: #D1FAE5;
   --bg-finalizado: #D1FAE5;
   --bg-cancelado: #FEE2E2;
+  --bg-comprado: #F3E8FF;
 
   /* Text Colors for Status */
   --text-nao-iniciado: #4B5563;
@@ -31,6 +33,7 @@
   --text-concluido: #065F46;
   --text-finalizado: #065F46;
   --text-cancelado: #991B1B;
+  --text-comprado: #581C87;
 
   /* Progress Bar */
   --progress-bg: #E5E7EB;
@@ -167,6 +170,11 @@
 .badge-cancelado {
   background-color: var(--bg-cancelado);
   color: var(--text-cancelado);
+}
+
+.badge-comprado {
+  background-color: var(--bg-comprado);
+  color: var(--text-comprado);
 }
 
 /* Card Info Section */

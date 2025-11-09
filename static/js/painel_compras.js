@@ -1,6 +1,6 @@
 /**
  * Painel de Compras WebSocket Handler + Alpine.js App
- * FASE 6: WebSocket para atualizações em tempo real do painel de compras
+ * NOVA ESTRUTURA: Itens agrupados por pedidos com checkboxes
  */
 
 class PainelComprasWebSocket {
@@ -57,6 +57,10 @@ class PainelComprasWebSocket {
             switch (data.type) {
                 case 'item_marcado_compra':
                     this.handleItemMarcadoCompra(data.item);
+                    break;
+
+                case 'item_comprado':
+                    this.handleItemComprado(data.item);
                     break;
 
                 case 'compra_confirmada':
@@ -134,18 +138,55 @@ class PainelComprasWebSocket {
     handleItemMarcadoCompra(item) {
         console.log('[WebSocket] Novo item marcado para compra:', item);
         // Recarregar a página para mostrar o novo item
-        // (Em uma implementação mais sofisticada, poderia adicionar dinamicamente ao DOM)
         window.location.reload();
+    }
+
+    handleItemComprado(itemData) {
+        console.log('[WebSocket] Item marcado/desmarcado como comprado:', itemData);
+
+        // Encontrar o item no DOM e atualizar o estado
+        const itemElement = document.querySelector(`[data-item-id="${itemData.id}"]`);
+        if (!itemElement) {
+            console.warn('[WebSocket] Item não encontrado no DOM:', itemData.id);
+            return;
+        }
+
+        // Encontrar o checkbox do item
+        const checkbox = itemElement.querySelector(`input[type="checkbox"]#item-${itemData.id}`);
+        if (!checkbox) {
+            console.warn('[WebSocket] Checkbox não encontrado para item:', itemData.id);
+            return;
+        }
+
+        // Atualizar o estado do checkbox
+        checkbox.checked = itemData.comprado;
+
+        // Atualizar ou criar badge "COMPRADO"
+        const badgeContainer = itemElement.querySelector('.ml-3');
+        if (itemData.comprado) {
+            // Criar badge se não existir
+            if (!badgeContainer || !badgeContainer.querySelector('.badge-comprado')) {
+                const newBadge = document.createElement('span');
+                newBadge.className = 'status-badge-modern badge-comprado text-xs';
+                newBadge.textContent = 'COMPRADO';
+
+                if (badgeContainer) {
+                    badgeContainer.innerHTML = '';
+                    badgeContainer.appendChild(newBadge);
+                }
+            }
+        } else {
+            // Remover badge se existir
+            if (badgeContainer) {
+                badgeContainer.innerHTML = '';
+            }
+        }
+
+        console.log(`[WebSocket] Item ${itemData.id} atualizado: comprado=${itemData.comprado}`);
     }
 
     handleCompraConfirmada(produto) {
         console.log('[WebSocket] Compra confirmada:', produto);
-
-        // Mostrar notificação de sucesso
-        if (window.Alpine && window.Alpine.store) {
-            // Implementação futura: usar Alpine.js store para notificações
-        }
-
         // Recarregar a página para atualizar a lista
         window.location.reload();
     }
@@ -172,32 +213,26 @@ class PainelComprasWebSocket {
 function painelComprasApp() {
     return {
         // State
-        produtos: window.produtosData || [],
-        filteredProducts: [],
+        pedidos: window.pedidosData || [],
+        filteredOrders: [],
         searchText: '',
         orderFilter: '',
-        modalConfirmar: {
-            show: false,
-            produtoCodigo: '',
-            produtoDesc: '',
-            totalItens: 0
-        },
 
         // Initialization
         init() {
             console.log('[PainelComprasApp] Inicializando...');
-            console.log('[PainelComprasApp] window.produtosData:', window.produtosData);
-            console.log('[PainelComprasApp] Total produtos carregados:', this.produtos.length);
+            console.log('[PainelComprasApp] window.pedidosData:', window.pedidosData);
+            console.log('[PainelComprasApp] Total pedidos carregados:', this.pedidos.length);
 
-            if (this.produtos.length > 0) {
-                console.log('[PainelComprasApp] Primeiro produto:', this.produtos[0]);
+            if (this.pedidos.length > 0) {
+                console.log('[PainelComprasApp] Primeiro pedido:', this.pedidos[0]);
             } else {
-                console.warn('[PainelComprasApp] AVISO: Nenhum produto encontrado!');
+                console.warn('[PainelComprasApp] AVISO: Nenhum pedido encontrado!');
             }
 
-            // Set filtered products
-            this.filteredProducts = this.produtos;
-            console.log('[PainelComprasApp] Produtos filtrados iniciais:', this.filteredProducts.length);
+            // Set filtered orders
+            this.filteredOrders = this.pedidos;
+            console.log('[PainelComprasApp] Pedidos filtrados iniciais:', this.filteredOrders.length);
 
             // Ensure search fields are cleared (fix browser autocomplete bugs)
             this.searchText = '';
@@ -213,76 +248,87 @@ function painelComprasApp() {
             this.ws = new PainelComprasWebSocket();
         },
 
-        // Filter products
-        filterProducts() {
-            let filtered = this.produtos;
+        // Filter orders
+        filterOrders() {
+            let filtered = this.pedidos;
 
-            // Filtro por texto (código ou descrição)
+            // Filtro por texto (código do produto, descrição ou cliente)
             if (this.searchText.trim()) {
                 const search = this.searchText.toLowerCase().trim();
-                filtered = filtered.filter(produto =>
-                    produto.codigo.toLowerCase().includes(search) ||
-                    produto.descricao.toLowerCase().includes(search)
-                );
+                filtered = filtered.filter(pedido => {
+                    // Buscar no cliente
+                    const clienteMatch = pedido.cliente.toLowerCase().includes(search);
+
+                    // Buscar nos itens (código ou descrição)
+                    const itemsMatch = pedido.itens.some(item =>
+                        item.produto_codigo.toLowerCase().includes(search) ||
+                        item.produto_descricao.toLowerCase().includes(search)
+                    );
+
+                    return clienteMatch || itemsMatch;
+                });
             }
 
-            // Filtro por pedido
+            // Filtro por número do pedido
             if (this.orderFilter.trim()) {
                 const orderSearch = this.orderFilter.toLowerCase().trim();
-                filtered = filtered.filter(produto =>
-                    produto.itens.some(item =>
-                        item.pedido_numero.toLowerCase().includes(orderSearch)
-                    )
+                filtered = filtered.filter(pedido =>
+                    pedido.numero.toLowerCase().includes(orderSearch)
                 );
             }
 
-            this.filteredProducts = filtered;
-            console.log('[PainelComprasApp] Produtos filtrados:', this.filteredProducts.length);
+            this.filteredOrders = filtered;
+            console.log('[PainelComprasApp] Pedidos filtrados:', this.filteredOrders.length);
         },
 
-        // Open confirmation modal
-        openConfirmModal(produto) {
-            this.modalConfirmar.show = true;
-            this.modalConfirmar.produtoCodigo = produto.codigo;
-            this.modalConfirmar.produtoDesc = produto.descricao;
-            this.modalConfirmar.totalItens = produto.itens.length;
-            console.log('[PainelComprasApp] Modal aberto para:', produto.codigo);
-        },
-
-        // Confirm purchase
-        async confirmarCompra() {
-            const produtoCodigo = this.modalConfirmar.produtoCodigo;
+        // Toggle item comprado (checkbox handler)
+        async toggleItemComprado(pedidoId, itemId, checked) {
+            console.log(`[PainelComprasApp] Toggling item ${itemId} do pedido ${pedidoId}: ${checked}`);
 
             try {
-                console.log('[PainelComprasApp] Confirmando compra de:', produtoCodigo);
-
-                const response = await fetch(`/painel-compras/confirmar/${produtoCodigo}/`, {
+                const response = await fetch(`/pedidos/item/${itemId}/marcar-comprado/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRFToken': this.getCsrfToken()
-                    }
+                    },
+                    body: JSON.stringify({ comprado: checked })
                 });
 
                 const data = await response.json();
 
                 if (data.success) {
-                    console.log('[PainelComprasApp] Compra confirmada com sucesso!');
-                    // Fechar modal
-                    this.modalConfirmar.show = false;
+                    console.log('[PainelComprasApp] Item atualizado com sucesso!', data);
 
-                    // Mostrar mensagem de sucesso (opcional)
-                    alert(`Compra confirmada com sucesso! ${data.total_itens} item(ns) marcado(s) como comprado.`);
+                    // Atualizar o estado local do item
+                    const pedido = this.pedidos.find(p => p.id === pedidoId);
+                    if (pedido) {
+                        const item = pedido.itens.find(i => i.id === itemId);
+                        if (item) {
+                            item.comprado = data.comprado;
+                        }
+                    }
 
-                    // Recarregar página para atualizar lista
-                    window.location.reload();
+                    // WebSocket vai atualizar os outros clientes automaticamente
                 } else {
-                    console.error('[PainelComprasApp] Erro ao confirmar compra:', data.error);
+                    console.error('[PainelComprasApp] Erro ao atualizar item:', data.error);
                     alert(`Erro: ${data.error}`);
+
+                    // Reverter o checkbox se falhou
+                    const checkbox = document.querySelector(`#item-${itemId}`);
+                    if (checkbox) {
+                        checkbox.checked = !checked;
+                    }
                 }
             } catch (error) {
                 console.error('[PainelComprasApp] Erro na requisição:', error);
-                alert('Erro ao confirmar compra. Por favor, tente novamente.');
+                alert('Erro ao atualizar item. Por favor, tente novamente.');
+
+                // Reverter o checkbox se falhou
+                const checkbox = document.querySelector(`#item-${itemId}`);
+                if (checkbox) {
+                    checkbox.checked = !checked;
+                }
             }
         },
 

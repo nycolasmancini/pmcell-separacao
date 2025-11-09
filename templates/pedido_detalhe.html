@@ -227,19 +227,15 @@
                                         </div>
 
                                         <!-- Action buttons -->
-                                        {% if user.tipo in 'SEPARADOR,ADMINISTRADOR' %}
                                         <button @click="abrirModalSubstituir({{ item.id }}); menuOpen = false"
                                                 class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-800 transition-colors">
                                             <span class="inline-block w-6">↔</span> Substituir
                                         </button>
-                                        {% endif %}
 
-                                        {% if user.tipo in 'COMPRADORA,ADMINISTRADOR' %}
                                         <button @click="abrirModalCompra({{ item.id }}); menuOpen = false"
                                                 class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-yellow-50 hover:text-yellow-800 transition-colors">
                                             <span class="inline-block w-6">🛒</span> Comprar
                                         </button>
-                                        {% endif %}
                                     </div>
                                 </div>
                             </div>

@@ -1392,10 +1392,12 @@ def marcar_item_comprado_view(request, item_id):
         f"pedido_{pedido.id}",
         "item_comprado",
         {
-            "item_id": item.id,
-            "comprado": item.compra_realizada,
-            "comprado_por": request.user.nome if item.compra_realizada else None,
-            "comprado_em": comprado_em_formatted
+            "item": {
+                "id": item.id,
+                "comprado": item.compra_realizada,
+                "comprado_por": request.user.nome if item.compra_realizada else None,
+                "comprado_em": comprado_em_formatted
+            }
         }
     )
 

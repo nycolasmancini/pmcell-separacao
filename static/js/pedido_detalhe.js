@@ -128,30 +128,6 @@ class PedidoDetalheWebSocket {
                 statusBadge.innerHTML = `<span class="status-text">Separado</span>`;
             }
 
-            // Add initials badge + hidden info div (match template structure)
-            const statusCell = row.querySelector('td:nth-child(4)');
-            if (statusCell) {
-                // Check if initials badge already exists
-                let initialsBadge = statusCell.querySelector('.separator-initials');
-                if (!initialsBadge) {
-                    // Create initials badge with first word of name
-                    const firstName = item.separado_por.split(' ')[0];
-                    initialsBadge = document.createElement('span');
-                    initialsBadge.className = 'separator-initials inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-slate-200 text-slate-700 rounded whitespace-nowrap';
-                    initialsBadge.setAttribute('data-item-id', item.id);
-                    initialsBadge.title = `${item.separado_por} - ${item.separado_em}`;
-                    initialsBadge.textContent = firstName;
-                    statusCell.appendChild(initialsBadge);
-
-                    // Create hidden info div
-                    const infoDiv = document.createElement('div');
-                    infoDiv.className = 'hidden separation-info';
-                    infoDiv.setAttribute('data-item-id', item.id);
-                    infoDiv.innerHTML = `<div class="separator-name">${item.separado_por}</div><div class="separator-time">${item.separado_em}</div>`;
-                    statusCell.appendChild(infoDiv);
-                }
-            }
-
             // Update statistics without full page reload
             this.updateStatistics();
         }

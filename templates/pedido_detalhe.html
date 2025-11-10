@@ -144,27 +144,6 @@
                                         {% else %}Pendente{% endif %}
                                     </span>
                                 </span>
-                                {% if item.separado %}
-                                <span class="separator-initials inline-flex items-center justify-center px-2 py-0.5 text-[9px] font-bold bg-slate-200 text-slate-700 rounded-full whitespace-nowrap"
-                                      data-item-id="{{ item.id }}"
-                                      title="{{ item.separado_por.nome }} - {{ item.separado_em|date:'d/m H:i' }}">
-                                    {{ item.separado_por.nome|truncatewords:1|cut:" ..." }}
-                                </span>
-                                <div class="hidden separation-info" data-item-id="{{ item.id }}">
-                                    <div class="separator-name">{{ item.separado_por.nome }}</div>
-                                    <div class="separator-time">{{ item.separado_em|date:"d/m H:i" }}</div>
-                                </div>
-                                {% elif item.em_compra %}
-                                <span class="purchase-initials inline-flex items-center justify-center w-5 h-5 text-[9px] font-bold bg-amber-200 text-amber-800 rounded-full"
-                                      data-item-id="{{ item.id }}"
-                                      title="{{ item.marcado_compra_por.nome }} - {{ item.marcado_compra_em|date:'d/m H:i' }}">
-                                    {{ item.marcado_compra_por.nome|slice:":2"|upper }}
-                                </span>
-                                <div class="hidden purchase-info" data-item-id="{{ item.id }}">
-                                    <div class="purchase-name">{{ item.marcado_compra_por.nome }}</div>
-                                    <div class="purchase-time">{{ item.marcado_compra_em|date:"d/m H:i" }}</div>
-                                </div>
-                                {% endif %}
                             </div>
                         </td>
 

@@ -86,7 +86,7 @@
                         <p class="text-sm text-gray-500 mb-2">Pedidos relacionados:</p>
                         <div class="flex flex-wrap gap-1">
                             {% for pedido in compra.pedidos %}
-                                <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
+                                <span class="inline-block bg-blue-100 text-blue-800 text-[10px] font-medium px-1.5 py-0.5 rounded">
                                     #{{ pedido.numero }} ({{ pedido.quantidade|floatformat:0 }})
                                 </span>
                             {% endfor %}
@@ -141,7 +141,7 @@
                         <td class="px-6 py-4">
                             <div class="text-sm text-gray-600">
                                 {% for pedido in compra.pedidos %}
-                                    <span class="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded mr-1 mb-1">
+                                    <span class="inline-block bg-blue-100 text-blue-800 text-[10px] font-medium px-1.5 py-0.5 rounded mr-1 mb-1">
                                         #{{ pedido.numero }} ({{ pedido.quantidade|floatformat:0 }})
                                     </span>
                                 {% endfor %}

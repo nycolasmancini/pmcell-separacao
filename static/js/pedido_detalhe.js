@@ -137,7 +137,7 @@ class PedidoDetalheWebSocket {
                     // Create initials badge with first word of name
                     const firstName = item.separado_por.split(' ')[0];
                     initialsBadge = document.createElement('span');
-                    initialsBadge.className = 'separator-initials inline-flex items-center justify-center px-2 py-0.5 text-[9px] font-bold bg-slate-200 text-slate-700 rounded-full whitespace-nowrap';
+                    initialsBadge.className = 'separator-initials inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold bg-slate-200 text-slate-700 rounded whitespace-nowrap';
                     initialsBadge.setAttribute('data-item-id', item.id);
                     initialsBadge.title = `${item.separado_por} - ${item.separado_em}`;
                     initialsBadge.textContent = firstName;
@@ -373,7 +373,7 @@ class PedidoDetalheWebSocket {
             if (statusCell) {
                 const statusBadge = statusCell.querySelector('.status-badge');
                 if (statusBadge) {
-                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800';
+                    statusBadge.className = 'status-badge px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gray-100 text-gray-800';
                     statusBadge.innerHTML = `<span class="status-text">Pendente</span>`;
                 }
 
@@ -647,7 +647,7 @@ function pedidoDetalheApp(pedidoId) {
                 // Update status badge
                 const statusBadge = row.querySelector('.status-badge');
                 if (statusBadge) {
-                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800';
+                    statusBadge.className = 'status-badge px-1.5 py-0.5 text-[10px] font-semibold rounded bg-green-100 text-green-800';
                     const statusText = statusBadge.querySelector('.status-text');
                     if (statusText) {
                         statusText.textContent = '✓ Separado';
@@ -681,7 +681,7 @@ function pedidoDetalheApp(pedidoId) {
                 // Reset status badge to original state
                 const statusBadge = row.querySelector('.status-badge');
                 if (statusBadge) {
-                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800';
+                    statusBadge.className = 'status-badge px-1.5 py-0.5 text-[10px] font-semibold rounded bg-gray-100 text-gray-800';
                     const statusText = statusBadge.querySelector('.status-text');
                     if (statusText) {
                         statusText.textContent = '⏳ Pendente';

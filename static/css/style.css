@@ -128,10 +128,10 @@
 
 /* Status Badges */
 .status-badge-modern {
-  padding: 0.25rem 0.75rem;
-  font-size: 0.75rem;
+  padding: 0.375rem 0.375rem;
+  font-size: 0.625rem;
   font-weight: 500;
-  border-radius: 9999px;
+  border-radius: 0.25rem;
   text-transform: uppercase;
   letter-spacing: 0.025em;
   transition: all 0.2s ease;
@@ -286,12 +286,12 @@
 
 .separator-badge {
   display: inline-block;
-  padding: 0.25rem 0.625rem;
+  padding: 0.375rem 0.375rem;
   font-size: 0.625rem;
   font-weight: 500;
   background-color: #cbd5e1;
   color: #475569;
-  border-radius: 0.375rem;
+  border-radius: 0.25rem;
   white-space: nowrap;
 }
 

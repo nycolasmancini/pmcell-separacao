@@ -1032,12 +1032,17 @@ def unseparar_item_view(request, item_id):
             item.produto_substituto = ''
             fields_to_update.extend(['substituido', 'produto_substituto'])
 
-        # Se estava em compra, limpar campos de compra
+        # Se estava em compra, limpar TODOS os campos de compra
         if estava_em_compra:
             logger.info(f"[UNSEPARAR ITEM] Removendo marcação de compra - Item ID: {item_id}")
             item.em_compra = False
+            item.marcado_compra_por = None
+            item.marcado_compra_em = None
             item.compra_realizada = False
-            fields_to_update.extend(['em_compra', 'compra_realizada'])
+            item.compra_realizada_por = None
+            item.compra_realizada_em = None
+            fields_to_update.extend(['em_compra', 'marcado_compra_por', 'marcado_compra_em',
+                                    'compra_realizada', 'compra_realizada_por', 'compra_realizada_em'])
 
         logger.info(f"[UNSEPARAR ITEM] Salvando item - ID: {item.id}, separado=False, substituido=False, em_compra=False")
         item.save(update_fields=fields_to_update)
@@ -1119,6 +1124,18 @@ def unseparar_item_view(request, item_id):
 
     # Broadcast card_status update
     broadcast_card_status_update(pedido)
+
+    # Se estava em compra, broadcast para painel de compras (remoção do item)
+    if estava_em_compra:
+        logger.info(f"[UNSEPARAR ITEM] Enviando broadcast para painel_compras - Item ID: {item_id}, Pedido ID: {pedido.id}")
+        broadcast_to_websocket(
+            "painel_compras",
+            "item_removido_compras",
+            {
+                "item_id": item.id,
+                "pedido_id": pedido.id
+            }
+        )
 
     logger.info(f"[UNSEPARAR ITEM] ✓ PROCESSO COMPLETO - Item {item.id} desseparado com sucesso, progresso: {porcentagem_separacao}%")
     return JsonResponse({

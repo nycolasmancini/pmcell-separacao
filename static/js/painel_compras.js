@@ -71,6 +71,10 @@ class PainelComprasWebSocket {
                     this.handleItemSeparadoDireto(data.item);
                     break;
 
+                case 'item_removido_compras':
+                    this.handleItemRemovidoCompras(data.item_id, data.pedido_id);
+                    break;
+
                 case 'pong':
                     // Resposta ao ping - conexão está ativa
                     break;
@@ -302,6 +306,56 @@ class PainelComprasWebSocket {
 
         } catch (error) {
             console.error('[WebSocket] Erro ao remover item dinamicamente, recarregando:', error);
+            window.location.reload();
+        }
+    }
+
+    handleItemRemovidoCompras(itemId, pedidoId) {
+        console.log('[WebSocket] Item removido do painel de compras (unseparate):', {itemId, pedidoId});
+
+        try {
+            // Obter componente Alpine via _x_dataStack
+            const component = document.querySelector('[x-data="painelComprasApp()"]');
+
+            if (!component || !component._x_dataStack) {
+                console.warn('[WebSocket] Alpine.js app não encontrado, recarregando página...');
+                window.location.reload();
+                return;
+            }
+
+            // Acessar dados reativos do Alpine
+            const alpineData = component._x_dataStack[0];
+
+            // Encontrar o pedido pelo ID
+            const pedido = alpineData.pedidos.find(p => p.id === pedidoId);
+
+            if (!pedido) {
+                console.warn('[WebSocket] Pedido não encontrado para ID:', pedidoId);
+                return;
+            }
+
+            // Remover o item do array de itens
+            const itemIndex = pedido.itens.findIndex(i => i.id === itemId);
+            if (itemIndex !== -1) {
+                pedido.itens.splice(itemIndex, 1);
+                console.log(`[WebSocket] Item ${itemId} removido do pedido ${pedido.numero} (unseparate)`);
+                console.log('[WebSocket] Total de itens restantes no pedido:', pedido.itens.length);
+            }
+
+            // Se o pedido ficou sem itens, remover o pedido
+            if (pedido.itens.length === 0) {
+                const pedidoIndex = alpineData.pedidos.findIndex(p => p.id === pedido.id);
+                if (pedidoIndex !== -1) {
+                    alpineData.pedidos.splice(pedidoIndex, 1);
+                    console.log(`[WebSocket] Pedido ${pedido.numero} removido (sem itens)`);
+                }
+            }
+
+            // Forçar re-filter para atualizar a UI
+            alpineData.filterOrders();
+
+        } catch (error) {
+            console.error('[WebSocket] Erro ao remover item dinamicamente (unseparate), recarregando:', error);
             window.location.reload();
         }
     }

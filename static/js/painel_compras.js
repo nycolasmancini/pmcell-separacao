@@ -168,6 +168,7 @@ class PainelComprasWebSocket {
                     itens: []
                 };
                 alpineData.pedidos.push(novoPedido);
+                alpineData.filteredOrders.push(novoPedido);  // Adicionar também a filteredOrders para aparecer em realtime
                 pedidoIndex = alpineData.pedidos.length - 1;
                 pedido = alpineData.pedidos[pedidoIndex];
                 console.log('[WebSocket] Novo pedido criado:', pedido);

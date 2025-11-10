@@ -36,7 +36,14 @@ class PainelComprasWebSocket {
     }
 
     onOpen() {
-        console.log('[WebSocket] Conectado com sucesso!');
+        console.log('[WebSocket] ========================================');
+        console.log('[WebSocket] ✅ CONEXÃO ESTABELECIDA COM SUCESSO!');
+        console.log('[WebSocket] ========================================');
+        console.log('[WebSocket] URL:', this.wsUrl);
+        console.log('[WebSocket] Protocol:', this.protocol);
+        console.log('[WebSocket] ReadyState:', this.ws.readyState);
+        console.log('[WebSocket] ========================================');
+
         this.reconnectAttempts = 0;
         this.reconnectDelay = 1000;
         this.updateConnectionStatus(true);
@@ -52,10 +59,17 @@ class PainelComprasWebSocket {
     onMessage(event) {
         try {
             const data = JSON.parse(event.data);
-            console.log('[WebSocket] Mensagem recebida:', data);
+            console.log('[WebSocket] ========================================');
+            console.log('[WebSocket] 📨 MENSAGEM RECEBIDA');
+            console.log('[WebSocket] ========================================');
+            console.log('[WebSocket] Data completo:', data);
+            console.log('[WebSocket] Tipo de mensagem:', data.type);
+            console.log('[WebSocket] Timestamp:', new Date().toISOString());
+            console.log('[WebSocket] ========================================');
 
             switch (data.type) {
                 case 'item_marcado_compra':
+                    console.log('[WebSocket] Roteando para handleItemMarcadoCompra...');
                     this.handleItemMarcadoCompra(data.item);
                     break;
 
@@ -140,25 +154,41 @@ class PainelComprasWebSocket {
     // Handlers de eventos
 
     handleItemMarcadoCompra(itemData) {
-        console.log('[WebSocket] Novo item marcado para compra:', itemData);
+        console.log('[WebSocket] ========================================');
+        console.log('[WebSocket] INICIANDO handleItemMarcadoCompra');
+        console.log('[WebSocket] Item data recebido:', itemData);
+        console.log('[WebSocket] ========================================');
 
         try {
             // Obter componente Alpine via _x_dataStack (método correto)
             const component = document.querySelector('[x-data="painelComprasApp()"]');
+            console.log('[WebSocket] Componente Alpine encontrado:', !!component);
 
             if (!component || !component._x_dataStack) {
-                console.warn('[WebSocket] Alpine.js app não encontrado, recarregando página...');
+                console.error('[WebSocket] ❌ Alpine.js app não encontrado, recarregando página...');
                 window.location.reload();
                 return;
             }
 
             // Acessar dados reativos do Alpine
             const alpineData = component._x_dataStack[0];
+            console.log('[WebSocket] ✅ alpineData acessado com sucesso');
+            console.log('[WebSocket] Estado atual de pedidos:', {
+                totalPedidos: alpineData.pedidos.length,
+                totalFiltered: alpineData.filteredOrders.length,
+                pedidoIds: alpineData.pedidos.map(p => p.id)
+            });
 
             // Encontrar o pedido nos dados do Alpine
             let pedidoIndex = alpineData.pedidos.findIndex(p => p.id === itemData.pedido_id);
+            console.log('[WebSocket] Procurando pedido ID:', itemData.pedido_id);
+            console.log('[WebSocket] Pedido encontrado no índice:', pedidoIndex);
 
             if (pedidoIndex === -1) {
+                console.log('[WebSocket] ========================================');
+                console.log('[WebSocket] CAMINHO: Criando NOVO pedido');
+                console.log('[WebSocket] ========================================');
+
                 // Novo pedido - criar com o item já incluído
                 const novoItem = {
                     id: itemData.id,
@@ -169,6 +199,7 @@ class PainelComprasWebSocket {
                     marcado_em: itemData.marcado_em,
                     comprado: itemData.comprado || false
                 };
+                console.log('[WebSocket] Novo item criado:', novoItem);
 
                 const novoPedido = {
                     id: itemData.pedido_id,
@@ -176,26 +207,46 @@ class PainelComprasWebSocket {
                     cliente: itemData.cliente || 'Cliente Desconhecido',
                     itens: [novoItem]  // ← FIX: Include item immediately
                 };
+                console.log('[WebSocket] Novo pedido criado:', novoPedido);
 
                 // Add to pedidos
+                console.log('[WebSocket] Adicionando pedido a alpineData.pedidos...');
                 alpineData.pedidos.push(novoPedido);
+                console.log('[WebSocket] ✅ Pedido adicionado a alpineData.pedidos');
 
                 // SEMPRE adicionar novos pedidos a filteredOrders (ignorar filtros)
                 // Pedidos novos devem aparecer IMEDIATAMENTE, independente de filtros ativos
+                console.log('[WebSocket] Adicionando pedido a alpineData.filteredOrders...');
                 alpineData.filteredOrders.push(novoPedido);
+                console.log('[WebSocket] ✅ Pedido adicionado a alpineData.filteredOrders');
 
-                console.log('[WebSocket] Novo pedido criado:', novoPedido);
-                console.log('[WebSocket] Total pedidos após criação:', alpineData.pedidos.length);
-                console.log('[WebSocket] Total filtered após criação:', alpineData.filteredOrders.length);
+                console.log('[WebSocket] Estado FINAL após criação:', {
+                    totalPedidos: alpineData.pedidos.length,
+                    totalFiltered: alpineData.filteredOrders.length,
+                    pedidoIds: alpineData.pedidos.map(p => p.id),
+                    filteredIds: alpineData.filteredOrders.map(p => p.id)
+                });
+                console.log('[WebSocket] ========================================');
+                console.log('[WebSocket] FIM handleItemMarcadoCompra - NOVO PEDIDO');
+                console.log('[WebSocket] ========================================');
 
             } else {
+                console.log('[WebSocket] ========================================');
+                console.log('[WebSocket] CAMINHO: Adicionando item a pedido EXISTENTE');
+                console.log('[WebSocket] ========================================');
+
                 // Pedido existente - adicionar item
                 const pedido = alpineData.pedidos[pedidoIndex];
+                console.log('[WebSocket] Pedido existente encontrado:', {
+                    id: pedido.id,
+                    numero: pedido.numero,
+                    totalItens: pedido.itens.length
+                });
 
                 // Verificar se o item já existe
                 const itemExistente = pedido.itens.find(i => i.id === itemData.id);
                 if (itemExistente) {
-                    console.log('[WebSocket] Item já existe no pedido, ignorando duplicata');
+                    console.warn('[WebSocket] ⚠️ Item já existe no pedido, ignorando duplicata');
                     return;
                 }
 
@@ -209,18 +260,36 @@ class PainelComprasWebSocket {
                     marcado_em: itemData.marcado_em,
                     comprado: itemData.comprado || false
                 };
+                console.log('[WebSocket] Novo item a ser adicionado:', novoItem);
 
+                console.log('[WebSocket] Adicionando item ao array pedido.itens...');
                 pedido.itens.push(novoItem);
+                console.log('[WebSocket] ✅ Item adicionado ao array');
 
                 // Force reactivity: Re-run filter
+                console.log('[WebSocket] Chamando filterOrders() para forçar reatividade...');
                 alpineData.filterOrders();
+                console.log('[WebSocket] ✅ filterOrders() executado');
 
-                console.log(`[WebSocket] Item ${itemData.id} adicionado ao pedido ${itemData.pedido_numero}`);
-                console.log('[WebSocket] Total de itens no pedido:', pedido.itens.length);
+                console.log('[WebSocket] Estado FINAL após adição de item:', {
+                    pedidoId: pedido.id,
+                    totalItensNoPedido: pedido.itens.length,
+                    totalPedidos: alpineData.pedidos.length,
+                    totalFiltered: alpineData.filteredOrders.length
+                });
+                console.log('[WebSocket] ========================================');
+                console.log('[WebSocket] FIM handleItemMarcadoCompra - ITEM EXISTENTE');
+                console.log('[WebSocket] ========================================');
             }
 
         } catch (error) {
-            console.error('[WebSocket] Erro ao adicionar item dinamicamente, recarregando:', error);
+            console.error('[WebSocket] ========================================');
+            console.error('[WebSocket] ❌❌❌ ERRO CRÍTICO ❌❌❌');
+            console.error('[WebSocket] ========================================');
+            console.error('[WebSocket] Erro ao adicionar item dinamicamente:', error);
+            console.error('[WebSocket] Stack trace:', error.stack);
+            console.error('[WebSocket] Recarregando página como fallback...');
+            console.error('[WebSocket] ========================================');
             window.location.reload();
         }
     }

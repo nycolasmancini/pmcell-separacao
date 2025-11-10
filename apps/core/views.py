@@ -1292,26 +1292,36 @@ def marcar_compra_view(request, item_id):
         broadcast_card_status_update(p)
 
     # Broadcast para painel de compras (para adicionar itens em real-time)
+    logger.info(f"[PAINEL_COMPRAS] Iniciando broadcast para {len(itens_marcados)} itens marcados")
     for i in itens_marcados:
         marcado_em_formatted = timezone.localtime(i.marcado_compra_em).strftime('%d/%m/%Y %H:%M') if i.marcado_compra_em else None
-        broadcast_to_websocket(
+        item_data = {
+            "item": {
+                "id": i.id,
+                "pedido_id": i.pedido.id,
+                "pedido_numero": i.pedido.numero_orcamento,
+                "cliente": i.pedido.nome_cliente,
+                "produto_codigo": i.produto.codigo,
+                "produto_descricao": i.produto.descricao,
+                "quantidade": str(i.quantidade_solicitada),
+                "marcado_por": request.user.nome,
+                "marcado_em": marcado_em_formatted,
+                "comprado": i.compra_realizada
+            }
+        }
+        logger.info(f"[PAINEL_COMPRAS] Broadcasting item_marcado_compra para item {i.id}, pedido #{i.pedido.numero_orcamento}")
+        logger.debug(f"[PAINEL_COMPRAS] Item data: {item_data}")
+
+        result = broadcast_to_websocket(
             "painel_compras",
             "item_marcado_compra",
-            {
-                "item": {
-                    "id": i.id,
-                    "pedido_id": i.pedido.id,
-                    "pedido_numero": i.pedido.numero_orcamento,
-                    "cliente": i.pedido.nome_cliente,
-                    "produto_codigo": i.produto.codigo,
-                    "produto_descricao": i.produto.descricao,
-                    "quantidade": str(i.quantidade_solicitada),
-                    "marcado_por": request.user.nome,
-                    "marcado_em": marcado_em_formatted,
-                    "comprado": i.compra_realizada
-                }
-            }
+            item_data
         )
+
+        if result:
+            logger.info(f"[PAINEL_COMPRAS] ✅ Broadcast bem-sucedido para item {i.id}")
+        else:
+            logger.error(f"[PAINEL_COMPRAS] ❌ Broadcast FALHOU para item {i.id}")
 
     return JsonResponse({
         'success': True,

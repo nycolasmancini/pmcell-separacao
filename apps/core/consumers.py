@@ -227,6 +227,13 @@ class PedidoDetalheConsumer(AsyncWebsocketConsumer):
             'item': event['item']
         }))
 
+    async def item_comprado(self, event):
+        """Handler chamado quando um item é marcado como comprado"""
+        await self.send(text_data=json.dumps({
+            'type': 'item_comprado',
+            'item': event['item']
+        }))
+
 
 # FASE 6: PainelComprasConsumer
 

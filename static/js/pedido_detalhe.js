@@ -69,6 +69,10 @@ class PedidoDetalheWebSocket {
                     this.handleItemEmCompra(data.item);
                     break;
 
+                case 'item_comprado':
+                    this.handleItemComprado(data.item);
+                    break;
+
                 case 'item_substituido':
                     this.handleItemSubstituido(data.item);
                     break;
@@ -238,6 +242,55 @@ class PedidoDetalheWebSocket {
             console.log('[DEBUG] Atualizando estatísticas...');
             this.updateStatistics();
             console.log('[DEBUG] Item em compra processado com sucesso');
+        } else {
+            console.error('[DEBUG] Linha não encontrada para item ID:', item.id);
+        }
+    }
+
+    handleItemComprado(item) {
+        console.log('[WebSocket] Item comprado:', item);
+        console.log('[DEBUG] Procurando linha com item ID:', item.id);
+
+        const row = document.querySelector(`tr[data-item-id="${item.id}"]`);
+        console.log('[DEBUG] Linha encontrada:', row ? 'Sim' : 'Não');
+
+        if (row) {
+            const statusCell = row.querySelector('td:nth-child(4)');
+            console.log('[DEBUG] Status cell encontrada:', statusCell ? 'Sim' : 'Não');
+
+            if (statusCell) {
+                const statusBadge = statusCell.querySelector('.status-badge');
+                console.log('[DEBUG] Status badge encontrado:', statusBadge ? 'Sim' : 'Não');
+
+                if (statusBadge) {
+                    // Update badge to purple "Comprado"
+                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full badge-comprado';
+                    statusBadge.innerHTML = `<span class="status-text">Comprado</span>`;
+                    console.log('[DEBUG] Status badge atualizado para Comprado (roxo)');
+                }
+
+                // Add or update timestamp (two lines: name / date)
+                const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
+                console.log('[DEBUG] Timestamp existente:', existingTimestamp ? 'Sim' : 'Não');
+
+                if (existingTimestamp) {
+                    // Update existing timestamp
+                    existingTimestamp.innerHTML = `<div>${item.comprado_por || ''}</div><div>${item.comprado_em || ''}</div>`;
+                    console.log('[DEBUG] Timestamp atualizado:', existingTimestamp.innerHTML);
+                } else if (item.comprado_por && item.comprado_em) {
+                    // Add new timestamp if data is available
+                    const timestampDiv = document.createElement('div');
+                    timestampDiv.className = 'text-xs text-gray-500 mt-1';
+                    timestampDiv.innerHTML = `<div>${item.comprado_por}</div><div>${item.comprado_em}</div>`;
+                    statusCell.appendChild(timestampDiv);
+                    console.log('[DEBUG] Timestamp adicionado:', timestampDiv.innerHTML);
+                }
+            }
+
+            // Atualizar todas as estatísticas
+            console.log('[DEBUG] Atualizando estatísticas...');
+            this.updateStatistics();
+            console.log('[DEBUG] Item comprado processado com sucesso');
         } else {
             console.error('[DEBUG] Linha não encontrada para item ID:', item.id);
         }

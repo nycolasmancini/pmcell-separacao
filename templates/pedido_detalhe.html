@@ -128,15 +128,18 @@
                                 <span class="status-badge px-1.5 py-0.5 text-[10px] font-semibold rounded leading-tight
                                     {% if item.separado %}bg-green-100 text-green-800
                                     {% elif item.substituido %}bg-blue-100 text-blue-800
+                                    {% elif item.compra_realizada %}badge-comprado
                                     {% elif item.em_compra %}bg-yellow-100 text-yellow-800
                                     {% else %}bg-gray-100 text-gray-800{% endif %}"
                                     :class="{'bg-green-100 text-green-800': itemsSeparados.includes({{ item.id }})}"
-                                    {% if item.separado or item.em_compra %}
-                                    title="{% if item.separado %}Separado por {{ item.separado_por.nome }} em {{ item.separado_em|date:'d/m H:i' }}{% elif item.em_compra %}Marcado para compra por {{ item.marcado_compra_por.nome }} em {{ item.marcado_compra_em|date:'d/m H:i' }}{% endif %}"
+                                    data-item-id="{{ item.id }}"
+                                    {% if item.separado or item.em_compra or item.compra_realizada %}
+                                    title="{% if item.separado %}Separado por {{ item.separado_por.nome }} em {{ item.separado_em|date:'d/m H:i' }}{% elif item.compra_realizada %}Comprado por {{ item.compra_realizada_por.nome }} em {{ item.compra_realizada_em|date:'d/m H:i' }}{% elif item.em_compra %}Marcado para compra por {{ item.marcado_compra_por.nome }} em {{ item.marcado_compra_em|date:'d/m H:i' }}{% endif %}"
                                     {% endif %}>
                                     <span class="status-text">
                                         {% if item.separado %}Separado
                                         {% elif item.substituido %}Substituído
+                                        {% elif item.compra_realizada %}Comprado
                                         {% elif item.em_compra %}Comprar
                                         {% else %}Pendente{% endif %}
                                     </span>
@@ -204,10 +207,13 @@
                                             <span class="inline-block px-1.5 py-0.5 text-[10px] font-semibold rounded
                                                 {% if item.separado %}bg-green-100 text-green-800
                                                 {% elif item.substituido %}bg-blue-100 text-blue-800
+                                                {% elif item.compra_realizada %}badge-comprado
                                                 {% elif item.em_compra %}bg-yellow-100 text-yellow-800
-                                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                {% else %}bg-gray-100 text-gray-800{% endif %}"
+                                                data-item-id="{{ item.id }}">
                                                 {% if item.separado %}Separado
                                                 {% elif item.substituido %}Substituído
+                                                {% elif item.compra_realizada %}Comprado
                                                 {% elif item.em_compra %}Comprar
                                                 {% else %}Pendente{% endif %}
                                             </span>
@@ -216,6 +222,12 @@
                                                 <div class="font-semibold">Separado por:</div>
                                                 <div>{{ item.separado_por.nome }}</div>
                                                 <div class="text-[10px] text-gray-500">{{ item.separado_em|date:"d/m H:i" }}</div>
+                                            </div>
+                                            {% elif item.compra_realizada %}
+                                            <div class="mt-2 text-xs text-gray-600">
+                                                <div class="font-semibold">Comprado por:</div>
+                                                <div>{{ item.compra_realizada_por.nome }}</div>
+                                                <div class="text-[10px] text-gray-500">{{ item.compra_realizada_em|date:"d/m H:i" }}</div>
                                             </div>
                                             {% elif item.em_compra %}
                                             <div class="mt-2 text-xs text-gray-600">

@@ -1370,6 +1370,18 @@ def marcar_item_comprado_view(request, item_id):
         }
     )
 
+    # Broadcast WebSocket para página de detalhes do pedido (badge em tempo real)
+    broadcast_to_websocket(
+        f"pedido_{pedido.id}",
+        "item_comprado",
+        {
+            "item_id": item.id,
+            "comprado": item.compra_realizada,
+            "comprado_por": request.user.nome if item.compra_realizada else None,
+            "comprado_em": comprado_em_formatted
+        }
+    )
+
     # Se item foi comprado E depois separado, remove do painel de compras
     # (broadcast para remover do painel será enviado pelo separar_item_view)
 

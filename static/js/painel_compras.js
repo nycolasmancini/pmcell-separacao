@@ -209,17 +209,24 @@ class PainelComprasWebSocket {
                 };
                 console.log('[WebSocket] Novo pedido criado:', novoPedido);
 
-                // Add to pedidos - USE SPREAD OPERATOR to force Alpine.js reactivity
+                // Add to pedidos - REVERTER para push() e forçar reatividade
                 console.log('[WebSocket] Adicionando pedido a alpineData.pedidos...');
-                alpineData.pedidos = [...alpineData.pedidos, novoPedido];
+                alpineData.pedidos.push(novoPedido);
                 console.log('[WebSocket] ✅ Pedido adicionado a alpineData.pedidos');
 
                 // SEMPRE adicionar novos pedidos a filteredOrders (ignorar filtros)
                 // Pedidos novos devem aparecer IMEDIATAMENTE, independente de filtros ativos
-                // USE SPREAD OPERATOR to force Alpine.js reactivity (push() doesn't trigger Proxy)
+                // REVERTER para push() - Spread operator quebra Proxy reactivity
                 console.log('[WebSocket] Adicionando pedido a alpineData.filteredOrders...');
-                alpineData.filteredOrders = [...alpineData.filteredOrders, novoPedido];
+                alpineData.filteredOrders.push(novoPedido);
                 console.log('[WebSocket] ✅ Pedido adicionado a alpineData.filteredOrders');
+
+                // NOVO: Forçar Alpine.js a re-renderizar (push() preserva Proxy reference)
+                if (window.Alpine && Alpine.nextTick) {
+                    Alpine.nextTick(() => {
+                        console.log('[WebSocket] Alpine.nextTick executado - UI deve atualizar');
+                    });
+                }
 
                 console.log('[WebSocket] Estado FINAL após criação:', {
                     totalPedidos: alpineData.pedidos.length,

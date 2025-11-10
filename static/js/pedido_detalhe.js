@@ -121,24 +121,34 @@ class PedidoDetalheWebSocket {
                 description.classList.add('line-through');
             }
 
-            // Update status badge
+            // Update status badge (match template: thin, compact, small text)
             const statusBadge = row.querySelector('.status-badge');
             if (statusBadge) {
-                statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800';
-                statusBadge.innerHTML = `
-                    <span class="status-text">Separado</span>
-                `;
+                statusBadge.className = 'status-badge px-1.5 py-0.5 text-[10px] font-semibold rounded leading-tight bg-green-100 text-green-800';
+                statusBadge.innerHTML = `<span class="status-text">Separado</span>`;
             }
 
-            // Add timestamp below status (two lines: name / date)
+            // Add initials badge + hidden info div (match template structure)
             const statusCell = row.querySelector('td:nth-child(4)');
             if (statusCell) {
-                const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
-                if (!existingTimestamp) {
-                    const timestampDiv = document.createElement('div');
-                    timestampDiv.className = 'text-xs text-gray-500 mt-1';
-                    timestampDiv.innerHTML = `<div>${item.separado_por}</div><div>${item.separado_em}</div>`;
-                    statusCell.appendChild(timestampDiv);
+                // Check if initials badge already exists
+                let initialsBadge = statusCell.querySelector('.separator-initials');
+                if (!initialsBadge) {
+                    // Create initials badge with first word of name
+                    const firstName = item.separado_por.split(' ')[0];
+                    initialsBadge = document.createElement('span');
+                    initialsBadge.className = 'separator-initials inline-flex items-center justify-center px-2 py-0.5 text-[9px] font-bold bg-slate-200 text-slate-700 rounded-full whitespace-nowrap';
+                    initialsBadge.setAttribute('data-item-id', item.id);
+                    initialsBadge.title = `${item.separado_por} - ${item.separado_em}`;
+                    initialsBadge.textContent = firstName;
+                    statusCell.appendChild(initialsBadge);
+
+                    // Create hidden info div
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'hidden separation-info';
+                    infoDiv.setAttribute('data-item-id', item.id);
+                    infoDiv.innerHTML = `<div class="separator-name">${item.separado_por}</div><div class="separator-time">${item.separado_em}</div>`;
+                    statusCell.appendChild(infoDiv);
                 }
             }
 
@@ -220,21 +230,10 @@ class PedidoDetalheWebSocket {
                 console.log('[DEBUG] Status badge encontrado:', statusBadge ? 'Sim' : 'Não');
 
                 if (statusBadge) {
-                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800';
+                    // Update badge to "Em Compra" (match template: thin, compact, small text)
+                    statusBadge.className = 'status-badge px-1.5 py-0.5 text-[10px] font-semibold rounded leading-tight bg-yellow-100 text-yellow-800';
                     statusBadge.innerHTML = `<span class="status-text">Em Compra</span>`;
                     console.log('[DEBUG] Status badge atualizado com sucesso');
-                }
-
-                // Add timestamp if not exists (two lines: name / date)
-                const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
-                console.log('[DEBUG] Timestamp existente:', existingTimestamp ? 'Sim' : 'Não');
-
-                if (!existingTimestamp) {
-                    const timestampDiv = document.createElement('div');
-                    timestampDiv.className = 'text-xs text-gray-500 mt-1';
-                    timestampDiv.innerHTML = `<div>${item.marcado_compra_por}</div><div>${item.marcado_compra_em}</div>`;
-                    statusCell.appendChild(timestampDiv);
-                    console.log('[DEBUG] Timestamp adicionado:', timestampDiv.innerHTML);
                 }
             }
 
@@ -263,27 +262,10 @@ class PedidoDetalheWebSocket {
                 console.log('[DEBUG] Status badge encontrado:', statusBadge ? 'Sim' : 'Não');
 
                 if (statusBadge) {
-                    // Update badge to purple "Comprado"
-                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full badge-comprado';
+                    // Update badge to purple "Comprado" (match template: thin, compact, small text)
+                    statusBadge.className = 'status-badge px-1.5 py-0.5 text-[10px] font-semibold rounded leading-tight badge-comprado';
                     statusBadge.innerHTML = `<span class="status-text">Comprado</span>`;
                     console.log('[DEBUG] Status badge atualizado para Comprado (roxo)');
-                }
-
-                // Add or update timestamp (two lines: name / date)
-                const existingTimestamp = statusCell.querySelector('.text-xs.text-gray-500.mt-1');
-                console.log('[DEBUG] Timestamp existente:', existingTimestamp ? 'Sim' : 'Não');
-
-                if (existingTimestamp) {
-                    // Update existing timestamp
-                    existingTimestamp.innerHTML = `<div>${item.comprado_por || ''}</div><div>${item.comprado_em || ''}</div>`;
-                    console.log('[DEBUG] Timestamp atualizado:', existingTimestamp.innerHTML);
-                } else if (item.comprado_por && item.comprado_em) {
-                    // Add new timestamp if data is available
-                    const timestampDiv = document.createElement('div');
-                    timestampDiv.className = 'text-xs text-gray-500 mt-1';
-                    timestampDiv.innerHTML = `<div>${item.comprado_por}</div><div>${item.comprado_em}</div>`;
-                    statusCell.appendChild(timestampDiv);
-                    console.log('[DEBUG] Timestamp adicionado:', timestampDiv.innerHTML);
                 }
             }
 
@@ -326,12 +308,12 @@ class PedidoDetalheWebSocket {
                 }
             }
 
-            // Atualizar status
+            // Atualizar status badge (match template: thin, compact, small text)
             const statusCell = row.querySelector('td:nth-child(4)');
             if (statusCell) {
                 const statusBadge = statusCell.querySelector('.status-badge');
                 if (statusBadge) {
-                    statusBadge.className = 'status-badge px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800';
+                    statusBadge.className = 'status-badge px-1.5 py-0.5 text-[10px] font-semibold rounded leading-tight bg-blue-100 text-blue-800';
                     statusBadge.innerHTML = `<span class="status-text">Substituído</span>`;
                 }
             }

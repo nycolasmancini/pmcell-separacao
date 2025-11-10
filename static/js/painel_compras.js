@@ -424,8 +424,12 @@ function painelComprasApp() {
             if (searchInput) searchInput.value = '';
             if (orderInput) orderInput.value = '';
 
-            // Inicializar WebSocket
-            this.ws = new PainelComprasWebSocket();
+            // Mark Alpine as fully initialized
+            console.log('[PainelComprasApp] Alpine.js inicialização completa');
+            console.log('[PainelComprasApp] Aguardando 200ms para garantir que Alpine está 100% pronto...');
+
+            // WebSocket será iniciado externamente após Alpine estar pronto
+            // Não inicializar aqui para evitar race condition
         },
 
         // Filter orders
@@ -536,4 +540,51 @@ window.addEventListener('beforeunload', () => {
     if (window.painelComprasWs) {
         window.painelComprasWs.close();
     }
+});
+
+// ============================================
+// EXTERNAL WEBSOCKET INITIALIZATION
+// ============================================
+// This code runs AFTER Alpine.js is fully initialized to prevent race conditions.
+// WebSocket messages that arrive before Alpine is ready will no longer cause failures.
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('[PainelCompras] DOMContentLoaded fired, waiting for Alpine.js...');
+
+    // Wait for Alpine.js to be fully initialized
+    const initializeWebSocket = () => {
+        const component = document.querySelector('[x-data="painelComprasApp()"]');
+
+        if (!component || !component._x_dataStack) {
+            console.warn('[PainelCompras] Alpine.js not ready yet, retrying in 100ms...');
+            setTimeout(initializeWebSocket, 100);
+            return;
+        }
+
+        // Alpine is ready! Wait extra 200ms to ensure 100% stability
+        console.log('[PainelCompras] Alpine.js detected, waiting 200ms for stability...');
+
+        setTimeout(() => {
+            console.log('[PainelCompras] Initializing WebSocket NOW...');
+
+            try {
+                // Get Alpine data to pass to WebSocket
+                const alpineData = component._x_dataStack[0];
+
+                // Initialize WebSocket and store reference globally
+                window.painelComprasWs = new PainelComprasWebSocket();
+
+                console.log('[PainelCompras] ✅ WebSocket initialized successfully!');
+                console.log('[PainelCompras] WebSocket URL:', window.painelComprasWs.wsUrl);
+                console.log('[PainelCompras] Alpine.js data available:', !!alpineData);
+                console.log('[PainelCompras] Current pedidos count:', alpineData.pedidos?.length || 0);
+            } catch (error) {
+                console.error('[PainelCompras] ❌ Failed to initialize WebSocket:', error);
+                // Don't reload on initialization error - allow page to function without realtime
+            }
+        }, 200);
+    };
+
+    // Start initialization process
+    initializeWebSocket();
 });

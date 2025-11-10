@@ -335,3 +335,14 @@ class PainelComprasConsumer(AsyncWebsocketConsumer):
             'type': 'item_comprado',
             'item': event['item']
         }))
+
+    async def item_removido_compras(self, event):
+        """
+        Handler chamado quando um item é removido do painel de compras (unseparate).
+        Remove o item da lista de compras.
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'item_removido_compras',
+            'item_id': event['item_id'],
+            'pedido_id': event['pedido_id']
+        }))

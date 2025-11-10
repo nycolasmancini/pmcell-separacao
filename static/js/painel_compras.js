@@ -157,51 +157,66 @@ class PainelComprasWebSocket {
 
             // Encontrar o pedido nos dados do Alpine
             let pedidoIndex = alpineData.pedidos.findIndex(p => p.id === itemData.pedido_id);
-            let pedido;
 
             if (pedidoIndex === -1) {
-                // Se o pedido não existe, criar um novo pedido
+                // Novo pedido - criar com o item já incluído
+                const novoItem = {
+                    id: itemData.id,
+                    produto_codigo: itemData.produto_codigo,
+                    produto_descricao: itemData.produto_descricao,
+                    quantidade: itemData.quantidade,
+                    marcado_por: itemData.marcado_por,
+                    marcado_em: itemData.marcado_em,
+                    comprado: itemData.comprado || false
+                };
+
                 const novoPedido = {
                     id: itemData.pedido_id,
                     numero: itemData.pedido_numero,
                     cliente: itemData.cliente || 'Cliente Desconhecido',
-                    itens: []
+                    itens: [novoItem]  // ← FIX: Include item immediately
                 };
+
+                // Add to pedidos
                 alpineData.pedidos.push(novoPedido);
-                alpineData.filteredOrders.push(novoPedido);  // Adicionar também a filteredOrders para aparecer em realtime
-                pedidoIndex = alpineData.pedidos.length - 1;
-                pedido = alpineData.pedidos[pedidoIndex];
-                console.log('[WebSocket] Novo pedido criado:', pedido);
+
+                // Force reactivity: Re-run filter to update filteredOrders
+                alpineData.filterOrders();
+
+                console.log('[WebSocket] Novo pedido criado:', novoPedido);
+                console.log('[WebSocket] Total pedidos após criação:', alpineData.pedidos.length);
+                console.log('[WebSocket] Total filtered após criação:', alpineData.filteredOrders.length);
+
             } else {
-                pedido = alpineData.pedidos[pedidoIndex];
+                // Pedido existente - adicionar item
+                const pedido = alpineData.pedidos[pedidoIndex];
+
+                // Verificar se o item já existe
+                const itemExistente = pedido.itens.find(i => i.id === itemData.id);
+                if (itemExistente) {
+                    console.log('[WebSocket] Item já existe no pedido, ignorando duplicata');
+                    return;
+                }
+
+                // Adicionar novo item
+                const novoItem = {
+                    id: itemData.id,
+                    produto_codigo: itemData.produto_codigo,
+                    produto_descricao: itemData.produto_descricao,
+                    quantidade: itemData.quantidade,
+                    marcado_por: itemData.marcado_por,
+                    marcado_em: itemData.marcado_em,
+                    comprado: itemData.comprado || false
+                };
+
+                pedido.itens.push(novoItem);
+
+                // Force reactivity: Re-run filter
+                alpineData.filterOrders();
+
+                console.log(`[WebSocket] Item ${itemData.id} adicionado ao pedido ${itemData.pedido_numero}`);
+                console.log('[WebSocket] Total de itens no pedido:', pedido.itens.length);
             }
-
-            // Verificar se o item já existe no pedido
-            const itemExistente = pedido.itens.find(i => i.id === itemData.id);
-            if (itemExistente) {
-                console.log('[WebSocket] Item já existe no pedido, ignorando duplicata');
-                return;
-            }
-
-            // Adicionar novo item diretamente ao array
-            const novoItem = {
-                id: itemData.id,
-                produto_codigo: itemData.produto_codigo,
-                produto_descricao: itemData.produto_descricao,
-                quantidade: itemData.quantidade,
-                marcado_por: itemData.marcado_por,
-                marcado_em: itemData.marcado_em,
-                comprado: itemData.comprado || false
-            };
-
-            // Usar push direto no array - Alpine detecta mutações de arrays
-            pedido.itens.push(novoItem);
-
-            // Forçar re-filter para atualizar a UI
-            alpineData.filterOrders();
-
-            console.log(`[WebSocket] Item ${itemData.id} adicionado ao pedido ${itemData.pedido_numero}`);
-            console.log('[WebSocket] Total de itens no pedido:', pedido.itens.length);
 
         } catch (error) {
             console.error('[WebSocket] Erro ao adicionar item dinamicamente, recarregando:', error);

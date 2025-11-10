@@ -180,8 +180,9 @@ class PainelComprasWebSocket {
                 // Add to pedidos
                 alpineData.pedidos.push(novoPedido);
 
-                // Force reactivity: Re-run filter to update filteredOrders
-                alpineData.filterOrders();
+                // SEMPRE adicionar novos pedidos a filteredOrders (ignorar filtros)
+                // Pedidos novos devem aparecer IMEDIATAMENTE, independente de filtros ativos
+                alpineData.filteredOrders.push(novoPedido);
 
                 console.log('[WebSocket] Novo pedido criado:', novoPedido);
                 console.log('[WebSocket] Total pedidos após criação:', alpineData.pedidos.length);

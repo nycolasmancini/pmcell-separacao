@@ -209,19 +209,17 @@ class PainelComprasWebSocket {
                 };
                 console.log('[WebSocket] Novo pedido criado:', novoPedido);
 
-                // Add to pedidos - REVERTER para push() e forçar reatividade
+                // Add to pedidos only - avoid duplication
                 console.log('[WebSocket] Adicionando pedido a alpineData.pedidos...');
                 alpineData.pedidos.push(novoPedido);
                 console.log('[WebSocket] ✅ Pedido adicionado a alpineData.pedidos');
 
-                // SEMPRE adicionar novos pedidos a filteredOrders (ignorar filtros)
-                // Pedidos novos devem aparecer IMEDIATAMENTE, independente de filtros ativos
-                // REVERTER para push() - Spread operator quebra Proxy reactivity
-                console.log('[WebSocket] Adicionando pedido a alpineData.filteredOrders...');
-                alpineData.filteredOrders.push(novoPedido);
-                console.log('[WebSocket] ✅ Pedido adicionado a alpineData.filteredOrders');
+                // Call filterOrders to update filtered view properly
+                console.log('[WebSocket] Chamando filterOrders() para atualizar view filtrada...');
+                alpineData.filterOrders();
+                console.log('[WebSocket] ✅ filterOrders() executado - filteredOrders atualizado');
 
-                // NOVO: Forçar Alpine.js a re-renderizar (push() preserva Proxy reference)
+                // Force Alpine.js reactivity if needed
                 if (window.Alpine && Alpine.nextTick) {
                     Alpine.nextTick(() => {
                         console.log('[WebSocket] Alpine.nextTick executado - UI deve atualizar');
@@ -487,8 +485,8 @@ function painelComprasApp() {
                 console.warn('[PainelComprasApp] AVISO: Nenhum pedido encontrado!');
             }
 
-            // Set filtered orders
-            this.filteredOrders = this.pedidos;
+            // Set filtered orders - use spread to create copy, not reference
+            this.filteredOrders = [...this.pedidos];
             console.log('[PainelComprasApp] Pedidos filtrados iniciais:', this.filteredOrders.length);
 
             // Ensure search fields are cleared (fix browser autocomplete bugs)

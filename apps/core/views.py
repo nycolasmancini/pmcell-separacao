@@ -425,6 +425,39 @@ def dashboard(request):
     FASE 4: WebSocket + filtros client-side
     """
     from apps.core.utils import calcular_metricas_dia, formatar_tempo
+    from datetime import datetime
+
+    # Mensagens rotativas para empty state (baseado no dia da semana)
+    EMPTY_STATE_MESSAGES = {
+        0: {  # Segunda-feira
+            'titulo': 'Tudo certo por aqui!',
+            'subtitulo': 'Nenhum pedido pendente. Aproveite o momento pra recarregar as energias ☕️'
+        },
+        1: {  # Terça-feira
+            'titulo': 'Tudo tranquilo na área de separação',
+            'subtitulo': 'Nenhum pedido encontrado nos filtros aplicados. Que tal organizar o espaço ou aproveitar um café? ☕️'
+        },
+        2: {  # Quarta-feira
+            'titulo': 'Hora do descanso merecido',
+            'subtitulo': 'Nenhum pedido disponível. Use esse tempo pra alongar, respirar e voltar com tudo!'
+        },
+        3: {  # Quinta-feira
+            'titulo': 'Fila zerada 🙌',
+            'subtitulo': 'Nenhum pedido em separação no momento. Um bom sinal de produtividade!'
+        },
+        4: {  # Sexta-feira
+            'titulo': 'Tudo sob controle',
+            'subtitulo': 'Nenhum pedido para separar agora — sinal de que a equipe está mandando bem! 👏'
+        },
+        5: {  # Sábado
+            'titulo': 'Tudo certo por aqui!',
+            'subtitulo': 'Nenhum pedido pendente. Aproveite o momento pra recarregar as energias ☕️'
+        },
+        6: {  # Domingo
+            'titulo': 'Tudo tranquilo na área de separação',
+            'subtitulo': 'Nenhum pedido encontrado. Que tal organizar o espaço ou aproveitar um café? ☕️'
+        }
+    }
 
     # Buscar apenas pedidos ativos (não finalizados e não deletados)
     # Ordenação será feita em Python por data de criação (mais recentes primeiro)
@@ -501,6 +534,10 @@ def dashboard(request):
             pedido__deletado=False
         ).count()
 
+    # Determinar mensagem do empty state baseada no dia da semana
+    dia_semana = datetime.now().weekday()  # 0 = Segunda, 6 = Domingo
+    empty_state = EMPTY_STATE_MESSAGES[dia_semana]
+
     context = {
         'usuario': request.user,
         'pedidos': pedidos_data,
@@ -511,6 +548,8 @@ def dashboard(request):
             'total_pedidos_hoje': metricas['total_pedidos_hoje'],
         },
         'itens_aguardando_compra': itens_aguardando_compra,
+        'empty_state_titulo': empty_state['titulo'],
+        'empty_state_subtitulo': empty_state['subtitulo'],
     }
 
     return render(request, 'dashboard.html', context)

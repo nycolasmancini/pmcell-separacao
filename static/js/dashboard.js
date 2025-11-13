@@ -141,6 +141,12 @@ class DashboardWebSocket {
     handlePedidoCriado(pedido) {
         console.log('[Dashboard] Novo pedido criado:', pedido);
 
+        // Garantir que campos obrigatórios existem com fallbacks robustos
+        pedido.logistica = pedido.logistica || 'Não definida';
+        pedido.embalagem = pedido.embalagem || 'Embalagem padrão';
+        pedido.separadores = pedido.separadores || [];
+        pedido.porcentagem_separacao = pedido.porcentagem_separacao !== undefined ? pedido.porcentagem_separacao : 0;
+
         // Adicionar card do pedido à lista (silenciosamente)
         this.addPedidoCard(pedido);
 

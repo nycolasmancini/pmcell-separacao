@@ -846,6 +846,10 @@ def confirmar_pedido_view(request):
                                     "data": data_formatada,
                                     "data_criacao": data_criacao_formatada,
                                     "total_itens": pedido.itens.count(),
+                                    "logistica": pedido.logistica or "Não definida",
+                                    "embalagem": pedido.embalagem or "Embalagem padrão",
+                                    "separadores": [],  # Novo pedido não tem separadores ainda
+                                    "porcentagem_separacao": 0,  # Sempre 0 para novos pedidos
                                 }
                             }
                         )

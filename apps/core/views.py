@@ -11,12 +11,13 @@ import copy
 import logging
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Usuario, LogAuditoria, Pedido, ItemPedido, Produto
+from .models import Usuario, LogAuditoria, Pedido, ItemPedido, Produto, SistemaConfig
 from .forms import (
     CriarUsuarioForm,
     EditarUsuarioForm,
     ResetarPinForm,
     HistoricoFiltrosForm,
+    EmptyStateImageForm,
 )
 from .permissions import (
     login_required_custom,
@@ -538,6 +539,9 @@ def dashboard(request):
     dia_semana = datetime.now().weekday()  # 0 = Segunda, 6 = Domingo
     empty_state = EMPTY_STATE_MESSAGES[dia_semana]
 
+    # Carregar configuração do sistema para imagem do empty state
+    config = SistemaConfig.load()
+
     context = {
         'usuario': request.user,
         'pedidos': pedidos_data,
@@ -550,6 +554,7 @@ def dashboard(request):
         'itens_aguardando_compra': itens_aguardando_compra,
         'empty_state_titulo': empty_state['titulo'],
         'empty_state_subtitulo': empty_state['subtitulo'],
+        'empty_state_image_url': config.empty_state_image.url if config.empty_state_image else None,
     }
 
     return render(request, 'dashboard.html', context)
@@ -2341,3 +2346,93 @@ def metricas_view(request):
     }
 
     return render(request, 'metricas.html', context)
+
+
+# =====================
+# FASE 9: Configuração do Sistema
+# =====================
+
+@login_required_custom
+@administrador_required
+@require_http_methods(["GET", "POST"])
+def configurar_empty_state_view(request):
+    """
+    Configurar imagem customizada do empty state.
+    Apenas ADMINISTRADOR tem acesso.
+
+    Permite upload de imagens personalizadas que serão:
+    - Validadas (tamanho, dimensões, formato)
+    - Otimizadas automaticamente (resize, compressão, conversão para WebP)
+    - Armazenadas em Railway Volumes (/data/media em produção)
+    """
+    from .utils.image_utils import optimize_empty_state_image
+
+    # Load singleton configuration
+    config = SistemaConfig.load()
+
+    if request.method == 'POST':
+        form = EmptyStateImageForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            arquivo = form.cleaned_data.get('empty_state_image')
+
+            if arquivo:
+                # Otimizar imagem se não for SVG
+                arquivo_otimizado = optimize_empty_state_image(arquivo)
+
+                # Salvar arquivo otimizado ou original (SVG)
+                if arquivo_otimizado:
+                    config.empty_state_image = arquivo_otimizado
+                else:
+                    # SVG não precisa otimização
+                    config.empty_state_image = arquivo
+
+                config.save()
+
+                # Log audit
+                LogAuditoria.objects.create(
+                    usuario=request.user,
+                    acao='atualizar_empty_state_image',
+                    modelo='SistemaConfig',
+                    objeto_id=config.id,
+                    dados_novos={'imagem': arquivo.name},
+                    ip=get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
+                )
+
+                messages.success(request, 'Imagem do empty state atualizada com sucesso!')
+            else:
+                # Remover imagem customizada (restaurar default)
+                if config.empty_state_image:
+                    config.empty_state_image.delete()
+                    config.empty_state_image = None
+                    config.save()
+
+                    # Log audit
+                    LogAuditoria.objects.create(
+                        usuario=request.user,
+                        acao='remover_empty_state_image',
+                        modelo='SistemaConfig',
+                        objeto_id=config.id,
+                        dados_novos={'imagem': None},
+                        ip=get_client_ip(request),
+                        user_agent=request.META.get('HTTP_USER_AGENT', '')[:255]
+                    )
+
+                    messages.success(request, 'Imagem customizada removida. Usando imagem padrão.')
+
+            return redirect('configurar_empty_state')
+        else:
+            # Show form errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
+    else:
+        form = EmptyStateImageForm()
+
+    context = {
+        'form': form,
+        'config': config,
+    }
+
+    return render(request, 'configurar_empty_state.html', context)

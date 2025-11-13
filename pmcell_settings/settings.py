@@ -184,6 +184,16 @@ STATICFILES_DIRS = [
 # to avoid 404 errors when manifest build is incomplete in Railway
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
+# Media files (User-uploaded content)
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
+MEDIA_URL = '/media/'
+
+# Use Railway Volumes for persistent storage in production
+if 'RAILWAY_ENVIRONMENT' in os.environ:
+    MEDIA_ROOT = '/data/media'  # Railway Volume mount point
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'  # Local development
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 

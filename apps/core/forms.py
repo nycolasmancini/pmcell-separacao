@@ -412,3 +412,41 @@ class HistoricoFiltrosForm(forms.Form):
             raise forms.ValidationError('Data de início não pode ser posterior à data de fim.')
 
         return cleaned_data
+
+
+# =====================
+# Configuração do Sistema
+# =====================
+
+class EmptyStateImageForm(forms.Form):
+    """Formulário para upload de imagem customizada do empty state"""
+
+    empty_state_image = forms.ImageField(
+        label='Imagem do Empty State',
+        required=False,
+        widget=forms.FileInput(attrs={
+            'accept': '.jpg,.jpeg,.png,.webp,.svg',
+            'class': 'hidden',
+            'id': 'empty-state-image-input'
+        }),
+        help_text='Tamanho máximo: 2 MB. Dimensões mínimas: 400x400px. Formatos: JPG, PNG, WebP, SVG'
+    )
+
+    def clean_empty_state_image(self):
+        """Valida o arquivo de imagem usando image_utils"""
+        from .utils.image_utils import validate_image_file
+        from django.core.exceptions import ValidationError as DjangoValidationError
+
+        arquivo = self.cleaned_data.get('empty_state_image')
+
+        # Se nenhum arquivo foi enviado, retorna None (campo opcional)
+        if not arquivo:
+            return None
+
+        try:
+            # Usar a função de validação do image_utils
+            validate_image_file(arquivo)
+            return arquivo
+        except DjangoValidationError as e:
+            # Re-lançar como ValidationError do forms
+            raise forms.ValidationError(str(e))

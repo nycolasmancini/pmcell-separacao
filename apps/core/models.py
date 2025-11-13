@@ -414,3 +414,41 @@ class LogAuditoria(models.Model):
     def __str__(self):
         usuario_str = f"{self.usuario}" if self.usuario else "Sistema"
         return f"{usuario_str} - {self.acao} - {self.modelo} #{self.objeto_id}"
+
+
+class SistemaConfig(models.Model):
+    """
+    Modelo de Configuração do Sistema (Singleton)
+    Armazena configurações globais como imagem customizada do empty state
+    """
+
+    empty_state_image = models.ImageField(
+        upload_to='empty_state/',
+        null=True,
+        blank=True,
+        verbose_name='Imagem do Empty State',
+        help_text='Imagem customizada para o estado vazio do dashboard (máx 2 MB, recomendado 512x512px)'
+    )
+    atualizado_em = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
+
+    class Meta:
+        verbose_name = 'Configuração do Sistema'
+        verbose_name_plural = 'Configurações do Sistema'
+
+    def __str__(self):
+        return "Configuração do Sistema"
+
+    def save(self, *args, **kwargs):
+        """Garante que apenas um registro exista (singleton pattern)"""
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        """Previne deleção do registro singleton"""
+        pass
+
+    @classmethod
+    def load(cls):
+        """Carrega ou cria a configuração singleton"""
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj

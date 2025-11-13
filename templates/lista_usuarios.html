@@ -10,9 +10,14 @@
             <h1 class="text-3xl font-bold text-gray-800">Gerenciar Usuários</h1>
             <p class="text-gray-600 mt-2">Administração de usuários do sistema</p>
         </div>
-        <a href="{% url 'criar_usuario' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-md">
-            + Novo Usuário
-        </a>
+        <div class="flex gap-3">
+            <a href="{% url 'configurar_empty_state' %}" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-md">
+                ⚙️ Configurar Empty State
+            </a>
+            <a href="{% url 'criar_usuario' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-md">
+                + Novo Usuário
+            </a>
+        </div>
     </div>
 
     <!-- Tabela de Usuários -->

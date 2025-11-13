@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from .views import home_view
 from apps.core.views import (
     login_view,
@@ -42,6 +44,7 @@ from apps.core.views import (
     toggle_ativo_usuario_view,
     historico_view,
     metricas_view,
+    configurar_empty_state_view,
 )
 
 urlpatterns = [
@@ -88,6 +91,13 @@ urlpatterns = [
     path('historico/', historico_view, name='historico'),
     path('metricas/', metricas_view, name='metricas'),
 
+    # Configuração do Sistema (FASE 9)
+    path('config/empty-state/', configurar_empty_state_view, name='configurar_empty_state'),
+
     # Django Admin
     path('admin/', admin.site.urls),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

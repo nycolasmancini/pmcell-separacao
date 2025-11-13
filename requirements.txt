@@ -12,3 +12,6 @@ channels-redis==4.1.0  # For production WebSocket with Redis backend
 
 # PDF Processing
 pdfplumber==0.10.3
+
+# Image Processing
+Pillow==10.1.0

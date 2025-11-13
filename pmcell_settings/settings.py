@@ -184,6 +184,13 @@ STATICFILES_DIRS = [
 # to avoid 404 errors when manifest build is incomplete in Railway
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
+# Configure WhiteNoise to serve media files in production
+# This allows user-uploaded content (like empty state images) to be served
+# when DEBUG=False without requiring a separate CDN or storage service
+WHITENOISE_AUTOREFRESH = DEBUG  # Only autorefresh in development
+WHITENOISE_USE_FINDERS = DEBUG  # Only use finders in development
+WHITENOISE_MAX_AGE = 31536000 if not DEBUG else 0  # Cache for 1 year in production
+
 # Media files (User-uploaded content)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 MEDIA_URL = '/media/'

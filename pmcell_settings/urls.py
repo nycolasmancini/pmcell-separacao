@@ -98,6 +98,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 ]
 
-# Serve media files in development
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve media files
+# WhiteNoise will serve these efficiently in production (DEBUG=False)
+# Django's development server will serve them in development (DEBUG=True)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

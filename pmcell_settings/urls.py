@@ -24,6 +24,7 @@ from apps.core.views import (
     login_view,
     logout_view,
     dashboard,
+    dashboard_refresh_ajax,
     reset_pin_view,
     upload_pdf_view,
     confirmar_pedido_view,
@@ -58,6 +59,7 @@ urlpatterns = [
 
     # Dashboard
     path('dashboard/', dashboard, name='dashboard'),
+    path('dashboard/refresh/', dashboard_refresh_ajax, name='dashboard_refresh_ajax'),
 
     # Upload de PDF (FASE 3)
     path('pedidos/upload-pdf/', upload_pdf_view, name='upload_pdf'),

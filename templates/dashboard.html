@@ -3,6 +3,22 @@
 
 {% block title %}Dashboard - Sistema PMCELL{% endblock %}
 
+{% block navbar_refresh_button %}
+<button id="refresh-button"
+        onclick="refreshDashboard()"
+        class="hover:bg-blue-700 p-2 rounded transition-colors duration-300 relative"
+        title="Atualizar dashboard">
+    <svg id="refresh-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+    </svg>
+    <!-- Spinner (hidden by default) -->
+    <svg id="refresh-spinner" class="w-6 h-6 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+</button>
+{% endblock %}
+
 {% block extra_head %}
 <script src="{% static 'js/dashboard.js' %}" defer></script>
 <script src="{% static 'js/cards.js' %}" defer></script>
@@ -86,15 +102,15 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="bg-gray-50 rounded-lg p-12 text-center">
+        <div class="bg-gray-50 rounded-lg p-6 text-center">
             {% if empty_state_image_url %}
                 <img src="{{ empty_state_image_url }}"
                      alt="Nenhum pedido"
-                     class="w-32 h-32 mx-auto mb-4 object-contain">
+                     class="w-64 h-64 mx-auto mb-2 object-contain">
             {% else %}
                 <img src="{% static 'images/empty-state.svg' %}"
                      alt="Nenhum pedido"
-                     class="w-32 h-32 mx-auto mb-4">
+                     class="w-64 h-64 mx-auto mb-2">
             {% endif %}
             <h3 class="text-lg font-semibold text-gray-700 mb-2">
                 {{ empty_state_titulo }}

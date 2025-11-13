@@ -488,3 +488,227 @@ window.addEventListener('beforeunload', () => {
         dashboardWS.close();
     }
 });
+
+/**
+ * Manual Dashboard Refresh (AJAX)
+ * Called by refresh button in navbar
+ */
+async function refreshDashboard() {
+    console.log('[Dashboard] Manual refresh triggered');
+
+    // Show spinner, hide refresh icon
+    const refreshIcon = document.getElementById('refresh-icon');
+    const refreshSpinner = document.getElementById('refresh-spinner');
+    const refreshButton = document.getElementById('refresh-button');
+
+    if (refreshIcon && refreshSpinner && refreshButton) {
+        refreshIcon.classList.add('hidden');
+        refreshSpinner.classList.remove('hidden');
+        refreshButton.disabled = true;
+    }
+
+    try {
+        const response = await fetch('/dashboard/refresh/', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('[Dashboard] Refresh data received:', data.pedidos.length, 'pedidos');
+
+        // Update dashboard with received data
+        updateDashboardCards(data.pedidos);
+
+    } catch (error) {
+        console.error('[Dashboard] Refresh failed:', error);
+        // Optionally show error message to user
+    } finally {
+        // Hide spinner, show refresh icon
+        if (refreshIcon && refreshSpinner && refreshButton) {
+            refreshSpinner.classList.add('hidden');
+            refreshIcon.classList.remove('hidden');
+            refreshButton.disabled = false;
+        }
+    }
+}
+
+/**
+ * Update dashboard cards with fresh data
+ * Adds new cards that don't exist yet
+ */
+function updateDashboardCards(pedidos) {
+    const pedidosContainer = document.getElementById('pedidos-container');
+    if (!pedidosContainer) return;
+
+    // Get existing card IDs
+    const existingCards = document.querySelectorAll('[data-pedido-id]');
+    const existingIds = new Set();
+    existingCards.forEach(card => {
+        const id = parseInt(card.dataset.pedidoId);
+        existingIds.add(id);
+    });
+
+    // Find new pedidos that don't exist in DOM
+    const newPedidos = pedidos.filter(p => !existingIds.has(p.id));
+
+    if (newPedidos.length === 0) {
+        console.log('[Dashboard] No new pedidos to add');
+        return;
+    }
+
+    console.log(`[Dashboard] Adding ${newPedidos.length} new pedido(s)`);
+
+    // Add new cards at the top (most recent first)
+    newPedidos.forEach(pedido => {
+        const cardHtml = createPedidoCardHtmlFromData(pedido);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = cardHtml;
+        const cardLink = tempDiv.firstElementChild;
+
+        // Add with fade-in animation
+        const card = cardLink.querySelector('.card-modern');
+        if (card) {
+            card.classList.add('opacity-0');
+        }
+
+        pedidosContainer.insertBefore(cardLink, pedidosContainer.firstChild);
+
+        // Trigger animation
+        setTimeout(() => {
+            if (card) {
+                card.classList.remove('opacity-0');
+                card.classList.add('transition-opacity', 'duration-300');
+            }
+        }, 10);
+    });
+}
+
+/**
+ * Create card HTML from AJAX data
+ */
+function createPedidoCardHtmlFromData(pedido) {
+    const borderClass = `card-border-${pedido.card_status.toLowerCase().replace(/_/g, '-')}`;
+    const badgeClass = `badge-${pedido.card_status.toLowerCase().replace(/_/g, '-')}`;
+
+    // Separator badges HTML
+    let separatorBadgesHtml = '';
+    if (pedido.separadores && pedido.separadores.length > 0) {
+        separatorBadgesHtml = `
+            <div class="separator-badges-container">
+                ${pedido.separadores.map(s => `<span class="separator-badge">${s}</span>`).join('')}
+            </div>
+        `;
+    }
+
+    return `
+        <a href="/pedidos/${pedido.id}/" class="card-link">
+            <div class="card-modern fade-in"
+                 data-pedido-id="${pedido.id}"
+                 data-pedido-status="${pedido.status}"
+                 data-card-status="${pedido.card_status}"
+                 data-criado-em="${pedido.data_criacao}"
+                 data-vendedor-id="${pedido.vendedor_id || ''}">
+
+                <!-- Borda superior colorida baseada no card_status -->
+                <div class="card-border-top ${borderClass}" data-card-border></div>
+
+                <div class="card-content">
+                    <!-- Header: Número do orçamento e Badge de Status -->
+                    <div class="card-header">
+                        <span class="card-number">#${pedido.numero_orcamento}</span>
+                        <span class="status-badge-modern ${badgeClass}" data-status>
+                            ${pedido.card_status_display}
+                        </span>
+                    </div>
+
+                    <!-- Divisor -->
+                    <div class="card-divider"></div>
+
+                    <!-- Informações do Pedido -->
+                    <div class="card-info">
+                        <p class="card-info-primary">${pedido.nome_cliente}</p>
+                        <p class="card-info-item">
+                            <span class="card-info-label">Vendedor:</span>
+                            <span class="card-info-value">${pedido.vendedor}</span>
+                        </p>
+                        <p class="card-info-item">
+                            <span class="card-info-label">Logística:</span>
+                            <span class="card-info-value">${pedido.logistica}</span>
+                        </p>
+                        <p class="card-info-item card-info-value">
+                            ${pedido.embalagem}
+                        </p>
+                    </div>
+
+                    <!-- Badges de Separadores -->
+                    ${separatorBadgesHtml}
+
+                    <!-- Barra de Progresso -->
+                    <div class="progress-container">
+                        <div class="progress-wrapper">
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill"
+                                     style="width: ${pedido.porcentagem_separacao}%"
+                                     data-progress="${pedido.porcentagem_separacao}"></div>
+                            </div>
+                            <span class="progress-text">
+                                ${pedido.porcentagem_separacao}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
+    `;
+}
+
+/**
+ * Auto-refresh with Page Visibility API
+ * Only refreshes when tab is active (visible)
+ */
+let autoRefreshInterval = null;
+const AUTO_REFRESH_INTERVAL = 60000; // 60 seconds
+
+function startAutoRefresh() {
+    // Clear any existing interval
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+
+    // Start new interval
+    autoRefreshInterval = setInterval(() => {
+        // Only refresh if page is visible
+        if (document.visibilityState === 'visible') {
+            console.log('[Dashboard] Auto-refresh triggered (tab is active)');
+            refreshDashboard();
+        } else {
+            console.log('[Dashboard] Auto-refresh skipped (tab is hidden)');
+        }
+    }, AUTO_REFRESH_INTERVAL);
+
+    console.log('[Dashboard] Auto-refresh started (interval: 60s, only when tab active)');
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+        console.log('[Dashboard] Auto-refresh stopped');
+    }
+}
+
+// Initialize auto-refresh when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    startAutoRefresh();
+});
+
+// Stop auto-refresh when leaving page
+window.addEventListener('beforeunload', () => {
+    stopAutoRefresh();
+});

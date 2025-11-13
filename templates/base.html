@@ -36,6 +36,9 @@
 
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4" x-data="{ open: false }">
+                    <!-- Refresh Button (only on dashboard) -->
+                    {% block navbar_refresh_button %}{% endblock %}
+
                     <!-- User Info -->
                     <div class="hidden md:block text-right">
                         <p class="text-sm font-semibold">{{ user.nome }}</p>

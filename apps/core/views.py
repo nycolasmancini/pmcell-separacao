@@ -562,6 +562,64 @@ def dashboard(request):
 
 @login_required_custom
 @require_http_methods(["GET"])
+def dashboard_refresh_ajax(request):
+    """
+    AJAX endpoint to refresh dashboard data without page reload.
+    Returns JSON with list of active pedidos data for client-side updates.
+    """
+    from django.http import JsonResponse
+
+    # Buscar apenas pedidos ativos (não finalizados e não deletados)
+    pedidos = Pedido.objects.filter(
+        deletado=False
+    ).exclude(
+        status__in=['FINALIZADO', 'CANCELADO']
+    ).select_related('vendedor').prefetch_related('itens')
+
+    # Preparar dados dos pedidos para JSON (mesma lógica do dashboard)
+    pedidos_data = []
+    for pedido in pedidos:
+        itens = pedido.itens.all()
+        total_itens = itens.count()
+        itens_separados = itens.filter(separado=True).count()
+        itens_completos = itens_separados
+        porcentagem_separacao = (itens_completos / total_itens * 100) if total_itens > 0 else 0
+
+        # Obter nomes únicos dos separadores
+        separadores = list(set(
+            itens.filter(separado=True, separado_por__isnull=False)
+            .values_list('separado_por__nome', flat=True)
+        ))
+
+        # Obter card_status
+        card_status_code, card_status_display = pedido.get_card_status()
+
+        pedidos_data.append({
+            'id': pedido.id,
+            'numero_orcamento': pedido.numero_orcamento,
+            'nome_cliente': pedido.nome_cliente,
+            'vendedor': pedido.vendedor.nome if pedido.vendedor else "Sem vendedor",
+            'status': pedido.status,
+            'card_status': card_status_code,
+            'card_status_display': card_status_display,
+            'data_criacao': pedido.criado_em.isoformat(),
+            'data_criacao_timestamp': int(pedido.criado_em.timestamp()),
+            'logistica': pedido.get_logistica_display() if pedido.logistica else "Logística padrão",
+            'embalagem': pedido.get_embalagem_display() if pedido.embalagem else "Embalagem padrão",
+            'itens_separados': itens_completos,
+            'total_itens': total_itens,
+            'porcentagem_separacao': round(porcentagem_separacao, 1),
+            'separadores': separadores,
+        })
+
+    # Ordenar por data de criação (mais recentes primeiro)
+    pedidos_data.sort(key=lambda p: -p['data_criacao_timestamp'])
+
+    return JsonResponse({'pedidos': pedidos_data})
+
+
+@login_required_custom
+@require_http_methods(["GET"])
 def pedido_detalhe_view(request, pedido_id):
     """
     View de detalhes do pedido com lista de itens.

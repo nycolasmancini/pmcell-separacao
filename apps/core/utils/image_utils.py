@@ -119,16 +119,14 @@ def optimize_empty_state_image(image_file):
         # Abrir imagem
         image = Image.open(image_file)
 
-        # Converter para RGB se necessário (WebP não suporta RGBA em alguns casos)
-        if image.mode in ('RGBA', 'LA', 'P'):
-            # Criar background branco
-            background = Image.new('RGB', image.size, (255, 255, 255))
-            if image.mode == 'P':
-                image = image.convert('RGBA')
-            background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
-            image = background
-        elif image.mode != 'RGB':
-            image = image.convert('RGB')
+        # Preservar transparência para RGBA/LA, converter P para RGBA
+        if image.mode == 'P':
+            # Paleta pode ter transparência
+            image = image.convert('RGBA')
+        elif image.mode not in ('RGB', 'RGBA'):
+            # Verificar se tem transparência
+            has_transparency = 'transparency' in image.info
+            image = image.convert('RGBA' if has_transparency else 'RGB')
 
         # Redimensionar mantendo aspect ratio
         # Usa thumbnail() que redimensiona até caber no tamanho alvo

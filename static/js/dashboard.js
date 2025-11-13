@@ -461,9 +461,21 @@ class DashboardWebSocket {
 // Inicializar WebSocket quando a página carregar
 let dashboardWS = null;
 
+// Consolidated DOMContentLoaded initialization
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Initialize WebSocket
     console.log('[Dashboard] Inicializando WebSocket...');
     dashboardWS = new DashboardWebSocket();
+
+    // 2. Setup refresh button event listener (supports both click and touch)
+    const refreshButton = document.getElementById('refresh-button');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', refreshDashboard);
+        console.log('[Dashboard] Refresh button listener configured');
+    }
+
+    // 3. Start auto-refresh
+    startAutoRefresh();
 
     // Debug: log inicial da ordenação dos cards
     const debugInitialOrder = () => {
@@ -482,11 +494,12 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(debugInitialOrder, 100);
 });
 
-// Fechar conexão ao sair da página
+// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
     if (dashboardWS) {
         dashboardWS.close();
     }
+    stopAutoRefresh();
 });
 
 /**
@@ -537,6 +550,9 @@ async function refreshDashboard() {
         }
     }
 }
+
+// Expose refreshDashboard to global scope for button onclick
+window.refreshDashboard = refreshDashboard;
 
 /**
  * Update dashboard cards with fresh data
